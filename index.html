@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VegasFib v35" />
+  <meta name="theme-color" content="#0b1120" />
+  <title>Vegas + Fib + 多策略融合掃描器 v35 極速穩定版（自動價格結算版）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #070d19;
+      --bg-card: #0f172a;
+      --bg-card-2: #162033;
+      --border: #1e293b;
+      --border-light: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.14);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.14);
+      --blue: #38bdf8;
+      --blue-bg: rgba(56, 189, 248, 0.14);
+      --amber: #f59e0b;
+      --amber-bg: rgba(245, 158, 11, 0.14);
+      --purple: #a78bfa;
+      --purple-bg: rgba(167, 139, 250, 0.14);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Microsoft JhengHei", "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+      padding-bottom: calc(230px + var(--safe-bottom));
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 12px; }
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #131f38 100%);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+      background: var(--bg-card-2); border: 1px solid var(--border-light); color: var(--blue);
+    }
+    .badge.green { color: var(--green); border-color: rgba(16,185,129,0.35); background: var(--green-bg); }
+    .badge.amber { color: var(--amber); border-color: rgba(245,158,11,0.35); background: var(--amber-bg); }
+    .badge.purple { color: var(--purple); border-color: rgba(167,139,250,0.35); background: var(--purple-bg); }
+    .badge.red { color: var(--red); border-color: rgba(239,68,68,0.35); background: var(--red-bg); }
+    h1 { font-size: 17px; margin: 0 0 6px 0; font-weight: 700; letter-spacing: -0.2px; }
+    .subtitle { color: var(--text-muted); font-size: 12px; margin: 0 0 10px 0; }
+
+    .ex-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+    .ex-pill {
+      background: var(--bg-card-2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.fallback { background: var(--amber); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    button, select, input[type="number"], input[type="text"] {
+      background: var(--bg-card-2); color: var(--text); border: 1px solid var(--border-light);
+      border-radius: 8px; padding: 7px 10px; font-size: 12px; font-family: inherit;
+    }
+    button { cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    button:active { transform: scale(0.98); }
+    button.primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+    button.success { background: #059669; border-color: #10b981; color: #fff; }
+    button.danger { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.45); color: #fca5a5; }
+    button.active-tab { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px; margin-bottom: 12px;
+    }
+    .card-header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+    .field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .field input, .field select { width: 100%; }
+
+    .filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; align-items: center; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; min-width: 820px; font-size: 12px; }
+    th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th { background: var(--bg-card-2); color: var(--text-muted); font-weight: 600; font-size: 11px; }
+    tr:hover { background: rgba(255,255,255,0.02); }
+    .pos { color: var(--green); font-weight: 600; }
+    .neg { color: var(--red); font-weight: 600; }
+    .tag { padding: 3px 7px; border-radius: 5px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .tag-long { background: var(--green-bg); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+    .tag-short { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .tag-stock { background: var(--purple-bg); color: var(--purple); }
+    .tag-rec { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,158,11,0.35); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .kpi { background: var(--bg-card-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .kpi .k-label { font-size: 11px; color: var(--text-muted); }
+    .kpi .k-val { font-size: 17px; font-weight: 700; margin: 3px 0; }
+    .kpi .k-sub { font-size: 11px; color: var(--text-dim); }
+
+    canvas { width: 100%; height: 150px; background: var(--bg-card-2); border-radius: 8px; border: 1px solid var(--border); display: block; }
+
+    /* Uber-style Bottom Dispatch Dock */
+    .dock {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 99;
+      background: rgba(11, 18, 34, 0.97); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-light);
+      padding: 10px 12px calc(10px + var(--safe-bottom));
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.55);
+    }
+    .dock-inner { max-width: 1180px; margin: 0 auto; }
+    .dock-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .dock-controls { display: grid; grid-template-columns: 1.5fr 1fr auto auto; gap: 6px; margin-bottom: 8px; }
+    .dock.minimized .dock-body { display: none; }
+    @media (max-width: 680px) {
+      .ex-bar { grid-template-columns: repeat(2, 1fr); }
+      .dock-controls { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* GitHub Mobile-style Sticky Top Navigation Bar & Slide-out Drawer */
+    .top-nav {
+      position: sticky; top: 0; z-index: 120;
+      background: rgba(11, 18, 34, 0.96); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 10px;
+    }
+    .top-nav-inner {
+      max-width: 1180px; margin: 0 auto;
+      display: flex; align-items: center; gap: 8px; height: 46px;
+    }
+    .hamburger-btn {
+      width: 34px; height: 34px; padding: 0; justify-content: center; flex-shrink: 0;
+      background: var(--bg-card-2); border: 1px solid var(--border-light); border-radius: 8px;
+      color: var(--text); font-size: 16px;
+    }
+    .nav-tabs {
+      display: flex; align-items: center; gap: 2px; overflow-x: auto;
+      scrollbar-width: none; -ms-overflow-style: none; height: 100%; flex: 1;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab {
+      position: relative; background: transparent; border: none; border-radius: 6px;
+      color: var(--text-muted); font-size: 12px; font-weight: 600;
+      padding: 0 10px; height: 100%; white-space: nowrap; flex-shrink: 0;
+    }
+    .nav-tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .nav-tab.active { color: var(--text); }
+    .nav-tab.active::after {
+      content: ""; position: absolute; left: 8px; right: 8px; bottom: 0;
+      height: 2.5px; border-radius: 2px; background: #f97316;
+    }
+
+    .drawer-backdrop {
+      position: fixed; inset: 0; z-index: 140;
+      background: rgba(2, 6, 23, 0.68); backdrop-filter: blur(3px);
+      opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .index-drawer {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 296px; max-width: 84vw; z-index: 150;
+      background: #0b1324; border-right: 1px solid var(--border-light);
+      box-shadow: 12px 0 32px rgba(0, 0, 0, 0.65);
+      transform: translateX(-102%); transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex; flex-direction: column;
+      padding-bottom: var(--safe-bottom);
+    }
+    .index-drawer.open { transform: translateX(0); }
+    .drawer-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+    }
+    .drawer-body { overflow-y: auto; padding: 10px 10px 24px; flex: 1; }
+    .drawer-group-title {
+      font-size: 11px; font-weight: 700; color: var(--text-dim);
+      padding: 10px 10px 4px; letter-spacing: 0.3px;
+    }
+    .drawer-item {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      background: transparent; border: none; border-radius: 8px;
+      padding: 9px 10px; margin-bottom: 2px; color: var(--text-muted);
+      font-size: 12.5px; font-weight: 600; text-align: left;
+    }
+    .drawer-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .drawer-item.active {
+      background: var(--blue-bg); color: var(--blue);
+      box-shadow: inset 3px 0 0 #38bdf8;
+    }
+    .drawer-count {
+      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+      background: var(--bg-card-2); border: 1px solid var(--border-light); color: var(--text);
+      flex-shrink: 0;
+    }
+    .section-anchor { scroll-margin-top: 56px; }
+  </style>
+</head>
+<body>
+<!-- GitHub Mobile-style Sticky Top Navigation Bar -->
+<nav class="top-nav" aria-label="專區快速導覽">
+  <div class="top-nav-inner">
+    <button class="hamburger-btn" onclick="openIndexDrawer()" aria-label="開啟專區快速索引導覽">☰</button>
+    <div class="nav-tabs" id="topNavTabs">
+      <button class="nav-tab active" data-target="sec-overview" onclick="jumpToSection('sec-overview')">總覽</button>
+      <button class="nav-tab" data-target="sec-risk" onclick="jumpToSection('sec-risk')">風控倉位</button>
+      <button class="nav-tab" data-target="sec-rec" onclick="jumpToSection('sec-rec')">確定推薦</button>
+      <button class="nav-tab" data-target="sec-stock" onclick="jumpToSection('sec-stock')">股票代幣</button>
+      <button class="nav-tab" data-target="sec-pool" onclick="jumpToSection('sec-pool')">全掃描池</button>
+      <button class="nav-tab" data-target="sec-backtest" onclick="jumpToSection('sec-backtest')">回測淨值</button>
+      <button class="nav-tab" data-target="sec-breakdown" onclick="jumpToSection('sec-breakdown')">策略勝率</button>
+      <button class="nav-tab" data-target="sec-trades" onclick="jumpToSection('sec-trades')">結算明細</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Left Slide-Out Index Drawer ('專區快速索引導覽') -->
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeIndexDrawer()"></div>
+<aside class="index-drawer" id="indexDrawer" aria-label="專區快速索引導覽">
+  <div class="drawer-head">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="badge green" style="margin:0;">v35</span>
+      <strong style="font-size:14px;">專區快速索引導覽</strong>
+    </div>
+    <button onclick="closeIndexDrawer()" style="padding:4px 9px;font-size:12px;">✕ 關閉</button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-group-title">即時行情與參數</div>
+    <button class="drawer-item active" data-target="sec-overview" onclick="jumpToSection('sec-overview')">
+      <span>📡 四所連線狀態與總覽</span>
+      <span class="drawer-count" id="navExBadge">0/4 所</span>
+    </button>
+    <button class="drawer-item" data-target="sec-risk" onclick="jumpToSection('sec-risk')">
+      <span>⚙️ 獨立風控倉位與搜尋</span>
+      <span class="drawer-count" id="navRiskBadge">2.0%</span>
+    </button>
+
+    <div class="drawer-group-title">訊號掃描專區</div>
+    <button class="drawer-item" data-target="sec-rec" onclick="jumpToSection('sec-rec')">
+      <span>✅ 確定推薦專區</span>
+      <span class="drawer-count" id="navRecCount">0 檔</span>
+    </button>
+    <button class="drawer-item" data-target="sec-stock" onclick="jumpToSection('sec-stock')">
+      <span>🏛️ 股票/ETF代幣大區</span>
+      <span class="drawer-count" id="navStockCount">0 檔</span>
+    </button>
+    <button class="drawer-item" data-target="sec-pool" onclick="jumpToSection('sec-pool')">
+      <span>📊 全市場獨立掃描池</span>
+      <span class="drawer-count" id="navPoolCount">0 檔</span>
+    </button>
+
+    <div class="drawer-group-title">回測與自動結算</div>
+    <button class="drawer-item" data-target="sec-backtest" onclick="jumpToSection('sec-backtest')">
+      <span>📈 回測勝率與盈虧淨值曲線</span>
+      <span class="drawer-count" id="navBtCount">0 筆</span>
+    </button>
+    <button class="drawer-item" data-target="sec-breakdown" onclick="jumpToSection('sec-breakdown')">
+      <span>🧩 策略與專區勝率分項</span>
+      <span class="drawer-count" id="navSettledCount">0 結算</span>
+    </button>
+    <button class="drawer-item" data-target="sec-trades" onclick="jumpToSection('sec-trades')">
+      <span>🧾 接單/回測自動結算明細</span>
+      <span class="drawer-count" id="navOpenCount">0 持倉</span>
+    </button>
+  </div>
+</aside>
+
+<div class="container">
+  <!-- Header & 4-Exchange Sync -->
+  <div class="header section-anchor" id="sec-overview">
+    <div class="badges">
+      <span class="badge green">v35 極速穩定版（自動價格結算版）</span>
+      <span class="badge">&lt;50ms 同步秒開</span>
+      <span class="badge">四所公開行情 (2200ms 逾時)</span>
+      <span class="badge amber">24H量 ≥ 350萬 USDT</span>
+      <span class="badge purple">即時報價自動判定止盈/止損/持倉中</span>
+    </div>
+    <h1>Vegas + Fib + 多策略融合掃描器（四所行為相關性去重・股票代幣大區・自動價格結算）</h1>
+    <p class="subtitle">啟動立即以內建資料完成秒開渲染；背景非同步連線 Binance、Bybit、OKX、Bitget 公開行情（上限 2200ms，24H 成交量門檻 ≥ 350萬 USDT）。下單紀錄會自動比對最新價格與 TP/SL 價位，自動結算「已止盈 / 已止損」或顯示「進行中 OPEN」與浮動盈虧。</p>
+
+    <div class="ex-bar" id="exStatusBar"></div>
+
+    <div class="toolbar">
+      <button class="primary" onclick="syncAllExchanges()">⚡ 立即同步四所並自動結算</button>
+      <button onclick="exportJSON()">匯出 JSON</button>
+      <button onclick="exportCSV()">匯出 CSV</button>
+      <label style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-card-2);border:1px solid var(--border-light);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;">
+        匯入備份 <input type="file" accept=".json" onchange="importJSON(event)" style="display:none;" />
+      </label>
+      <button class="danger" onclick="resetDefaults()">重設預設</button>
+      <span id="syncSummary" style="font-size:11px;color:var(--text-muted);margin-left:auto;">初始化完成</span>
+    </div>
+  </div>
+
+  <!-- Risk & Behavioral Dedupe Settings -->
+  <div class="card section-anchor" id="sec-risk">
+    <div class="card-header">
+      <div class="card-title">⚙️ 獨立風控倉位計算器 ＆ 行為相關性去重參數</div>
+      <span style="font-size:11px;color:var(--text-muted);">技術止損獨立計算・建議倉位不影響回測淨值</span>
+    </div>
+    <div class="grid-3">
+      <div class="field">
+        <label>帳戶本金 (USDT)</label>
+        <input type="number" id="capitalInput" value="1000" min="10" step="10" onchange="saveSettings(); renderAll();" />
+      </div>
+      <div class="field">
+        <label>獨立倉位風險上限 (%)</label>
+        <input type="number" id="riskInput" value="2.0" min="0.1" max="20" step="0.1" onchange="saveSettings(); renderAll();" />
+      </div>
+      <div class="field">
+        <label>行為相關性去重閾值 (同向漲跌差 ±<span id="corrVal">0.45</span>%)</label>
+        <input type="range" id="corrInput" min="0.10" max="1.50" step="0.05" value="0.45" oninput="document.getElementById('corrVal').textContent=parseFloat(this.value).toFixed(2); saveSettings(); renderAll();" />
+      </div>
+      <div class="field">
+        <label>搜尋幣種 / 股票代幣 / 策略</label>
+        <input type="text" id="searchInput" placeholder="輸入 BTC, SOL, NVDA, Vegas, 背離..." oninput="renderAll()" />
+      </div>
+      <div class="field">
+        <label>同型連動去重顯示</label>
+        <button id="toggleDupBtn" onclick="toggleShowDup()" style="width:100%;justify-content:center;">顯示同型連動去重幣 (0)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmed Recommendations -->
+  <div class="card section-anchor" id="sec-rec">
+    <div class="card-header">
+      <div class="card-title">✅ 確定推薦專區（高共振＋高流動性篩選）</div>
+      <span class="badge green" id="recCountBadge">0 檔確定推薦</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>標的</th>
+            <th>報價來源 / 交易所</th>
+            <th>最新價</th>
+            <th>24H 漲跌</th>
+            <th>24H量 (USDT)</th>
+            <th>策略模型 / 方向 / 動態R比</th>
+            <th>進場 / 單一TP / 獨立止損</th>
+            <th>建議倉位 (USDT)</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="recTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stock / ETF Token Zone -->
+  <div class="card section-anchor" id="sec-stock">
+    <div class="card-header">
+      <div class="card-title">🏛️ 股票代幣大區 ＆ 股票類確定推薦小區（TradFi / ETF / 美股映射）</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span class="badge amber" id="usMarketSessionBadge">美股交易時段檢核中</span>
+        <span class="badge purple" id="stockCountBadge">0 檔股票代幣</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>標的 / 類別標籤</th>
+            <th>報價來源 / 交易所</th>
+            <th>最新價</th>
+            <th>24H 漲跌</th>
+            <th>24H量 (USDT)</th>
+            <th>策略模型 / 方向 / 動態R比</th>
+            <th>進場 / 單一TP / 獨立止損</th>
+            <th>建議倉位 (USDT)</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="stockTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Main Independent Scanner Pool -->
+  <div class="card section-anchor" id="sec-pool">
+    <div class="card-header">
+      <div class="card-title">📡 全市場獨立掃描池（24H量 ≥ 350萬 USDT・全策略分類）</div>
+      <span class="badge" id="mainCountBadge">0 檔獨立標的</span>
+    </div>
+    <div class="filter-row" id="strategyFilterBar">
+      <button class="active-tab" data-strat="ALL" onclick="setStrategyFilter('ALL', this)">全部策略</button>
+      <button data-strat="多策略融合" onclick="setStrategyFilter('多策略融合', this)">多策略融合</button>
+      <button data-strat="Vegas 通道" onclick="setStrategyFilter('Vegas 通道', this)">Vegas 通道</button>
+      <button data-strat="Fib 共振" onclick="setStrategyFilter('Fib 共振', this)">Fib 共振</button>
+      <button data-strat="突破動能" onclick="setStrategyFilter('突破動能', this)">突破動能</button>
+      <button data-strat="量價背離" onclick="setStrategyFilter('量價背離', this)">量價背離</button>
+      <button data-strat="均線趨勢" onclick="setStrategyFilter('均線趨勢', this)">均線趨勢</button>
+      <button id="onlyRecBtn" onclick="toggleOnlyRec()">✅ 僅看確定推薦</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>標的</th>
+            <th>報價來源 / 交易所</th>
+            <th>最新價</th>
+            <th>24H 漲跌</th>
+            <th>24H量 (USDT)</th>
+            <th>行為去重狀態</th>
+            <th>策略模型 / 方向 / 動態R比</th>
+            <th>進場 / 單一TP / 獨立止損</th>
+            <th>建議倉位</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="mainTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Batch Public K-Line Backtester & Auto Settlement -->
+  <div class="card section-anchor" id="sec-backtest">
+    <div class="card-header">
+      <div class="card-title">📊 回測信號勝率與盈虧淨值專區（自動價格比對結算・零假回測初始值）</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="success" onclick="autoEvaluateOpenTrades(true)">🔄 立即依最新價格檢核持倉</button>
+        <button class="primary" onclick="recordCurrentDispatch()">+ 記錄目前派單信號</button>
+        <button class="danger" onclick="clearBacktestRecords()">清除回測/交易紀錄</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div style="background:var(--bg-card-2);border:1px solid var(--border-light);border-radius:10px;padding:10px;margin-bottom:12px;">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">
+        <strong style="font-size:13px;">四所公開 K 線 (klines) 批次自動回測器（支援最多全池 50 檔並發節流）</strong>
+        <span class="badge amber" id="btStatusBadge">尚未執行批次公開 K 線回測 (0 筆紀錄)</span>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        <button class="primary" onclick="runBatchBacktest('POOL')">⚡ 一鍵批次抓回測（掃描池）</button>
+        <button class="success" onclick="runBatchBacktest('REC')">✅ 抓確定推薦標的</button>
+        <button onclick="runBatchBacktest('STOCK')">🏛️ 抓股票代幣標的</button>
+        <button onclick="runBatchBacktest('CUSTOM')">🔍 抓自訂輸入標的</button>
+      </div>
+
+      <div class="grid-3">
+        <div class="field">
+          <label>批次檔數上限（已放寬至全掃描池）</label>
+          <select id="btLimitSelect">
+            <option value="10">前 10 檔</option>
+            <option value="20">前 20 檔</option>
+            <option value="30" selected>前 30 檔（覆蓋全派單佇列）</option>
+            <option value="50">前 50 檔</option>
+            <option value="999">全部符合條件標的</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>K 線來源所</label>
+          <select id="btExchangeSelect">
+            <option value="AUTO" selected>自動四所 (BN → BY → OKX → BG)</option>
+            <option value="Binance">Binance 公開 K 線</option>
+            <option value="Bybit">Bybit 公開 K 線</option>
+            <option value="OKX">OKX 公開 K 線</option>
+            <option value="Bitget">Bitget 公開 K 線</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>K 線週期</label>
+          <select id="btIntervalSelect">
+            <option value="15m">15m（15 分鐘）</option>
+            <option value="1h" selected>1h（1 小時）</option>
+            <option value="4h">4h（4 小時）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>K 線根數</label>
+          <select id="btBarsSelect">
+            <option value="120">120 根</option>
+            <option value="200" selected>200 根</option>
+            <option value="300">300 根</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>回測策略模型（對應全掃描訊號）</label>
+          <select id="btStrategySelect">
+            <option value="AUTO" selected>自動依標的所屬訊號模型</option>
+            <option value="多策略融合">多策略融合</option>
+            <option value="Vegas 通道">Vegas 通道</option>
+            <option value="Fib 共振">Fib 共振</option>
+            <option value="突破動能">突破動能</option>
+            <option value="量價背離">量價背離</option>
+            <option value="均線趨勢">均線趨勢</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>R 比模式</label>
+          <select id="btRModeSelect">
+            <option value="DYNAMIC" selected>逐幣動態 R（依波動度與流動性）</option>
+            <option value="FIXED_2">固定 2.0R</option>
+            <option value="FIXED_2_5">固定 2.5R</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:8px;">
+        <label>自訂批次回測標的（支援逗號或空白分隔多檔）</label>
+        <input type="text" id="btCustomSymbols" value="BTCUSDT, ETHUSDT, SOLUSDT, JUPUSDT, SUIUSDT, ONEUSDT, SATSUSDT, NVDAUSDT, MUUSDT" />
+      </div>
+      <div id="btLogText" style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+        狀態：尚未執行批次公開 K 線回測。手動接單會自動比對即時報價判定「已止盈 / 已止損 / 進行中 OPEN」。
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">盈虧淨值與回撤曲線</div>
+      <canvas id="equityCanvas" width="900" height="150"></canvas>
+    </div>
+
+    <div class="section-anchor" id="sec-breakdown" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <strong style="font-size:12px;">策略與專區勝率 / 盈虧淨值分項</strong>
+        <span style="font-size:11px;color:var(--text-muted);">隨價格自動結算即時重算</span>
+      </div>
+      <div class="table-wrap">
+        <table style="min-width:480px;">
+          <thead>
+            <tr>
+              <th>策略 / 專區</th>
+              <th>結算筆數</th>
+              <th>勝率</th>
+              <th>盈虧淨值</th>
+            </tr>
+          </thead>
+          <tbody id="strategyBreakdownBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-wrap section-anchor" id="sec-trades">
+      <table>
+        <thead>
+          <tr>
+            <th>時間</th>
+            <th>標的</th>
+            <th>策略 / 來源</th>
+            <th>方向</th>
+            <th>進場 / 最新比對價</th>
+            <th>單一 TP (%・R)</th>
+            <th>獨立止損 (%・-1.0R)</th>
+            <th>建議倉位 (USDT)</th>
+            <th>盈虧淨值 (USDT)</th>
+            <th>狀態（自動依價格判定・可點選覆寫）</th>
+          </tr>
+        </thead>
+        <tbody id="tradeHistoryBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Uber-Style Bottom Dispatch Queue Dock -->
+<div class="dock" id="dispatchDock">
+  <div class="dock-inner">
+    <div class="dock-top">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <strong style="font-size:13px;">🚖 派單佇列 / 確定推薦接單</strong>
+        <span class="badge blue" id="dispatchCounter">派單 0 / 0</span>
+        <span class="badge green" id="dispatchQuoteBadge">即時報價</span>
+      </div>
+      <button onclick="toggleDockMinimize()" id="dockMinBtn">- 縮小</button>
+    </div>
+    <div class="dock-body">
+      <div class="dock-controls">
+        <select id="dispatchSelect" onchange="selectDispatchIndex(this.selectedIndex)"></select>
+        <select id="dispatchSideSelect" onchange="updateDispatchSummary()">
+          <option value="LONG">做多 LONG</option>
+          <option value="SHORT">做空 SHORT</option>
+        </select>
+        <button onclick="prevDispatch()">◀ 上一張</button>
+        <button onclick="nextDispatch()">略過 / 下一張 ▶</button>
+      </div>
+      <button class="success" style="width:100%;justify-content:center;padding:9px;font-size:13px;" onclick="acceptDispatchOrder()">
+        ✓ 確定推薦下單（自動跳下一張）
+      </button>
+      <div id="dispatchDetailText" style="font-size:11px;color:var(--text-muted);margin-top:6px;">載入派單資訊中...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MIN_VOL_USDT = 3500000;
+const FETCH_TIMEOUT_MS = 2200;
+const STORAGE_KEY = 'vegas_fib_v35_auto_settle_state';
+const STRATEGIES = ['多策略融合', 'Vegas 通道', 'Fib 共振', '突破動能', '量價背離', '均線趨勢'];
+
+const SEED_ASSETS = [
+  { symbol: 'BTCUSDT', name: 'BTC', type: 'CRYPTO', price: 94250.0, change24h: 2.35, vol24h: 1850000000, exchange: 'Binance', strategy: '多策略融合', confirmed: true },
+  { symbol: 'ETHUSDT', name: 'ETH', type: 'CRYPTO', price: 3340.5, change24h: 1.85, vol24h: 920000000, exchange: 'Binance', strategy: 'Vegas 通道', confirmed: true },
+  { symbol: 'SOLUSDT', name: 'SOL', type: 'CRYPTO', price: 214.8, change24h: 4.62, vol24h: 640000000, exchange: 'Bybit', strategy: '突破動能', confirmed: true },
+  { symbol: 'XRPUSDT', name: 'XRP', type: 'CRYPTO', price: 1.482, change24h: 5.18, vol24h: 510000000, exchange: 'OKX', strategy: '多策略融合', confirmed: true },
+  { symbol: 'BNBUSDT', name: 'BNB', type: 'CRYPTO', price: 658.4, change24h: 1.12, vol24h: 210000000, exchange: 'Binance', strategy: '均線趨勢', confirmed: true },
+  { symbol: 'DOGEUSDT', name: 'DOGE', type: 'CRYPTO', price: 0.3845, change24h: -3.45, vol24h: 480000000, exchange: 'Bybit', strategy: 'Fib 共振', confirmed: true },
+  { symbol: 'SUIUSDT', name: 'SUI', type: 'CRYPTO', price: 3.685, change24h: 6.40, vol24h: 390000000, exchange: 'OKX', strategy: '突破動能', confirmed: true },
+  { symbol: 'AVAXUSDT', name: 'AVAX', type: 'CRYPTO', price: 41.25, change24h: 3.15, vol24h: 165000000, exchange: 'Binance', strategy: 'Vegas 通道', confirmed: true },
+  { symbol: 'LINKUSDT', name: 'LINK', type: 'CRYPTO', price: 18.74, change24h: 2.94, vol24h: 142000000, exchange: 'Bitget', strategy: 'Fib 共振', confirmed: true },
+  { symbol: 'ADAUSDT', name: 'ADA', type: 'CRYPTO', price: 0.962, change24h: 3.22, vol24h: 198000000, exchange: 'OKX', strategy: '均線趨勢', confirmed: true },
+  { symbol: 'PEPEUSDT', name: 'PEPE', type: 'CRYPTO', price: 0.0000194, change24h: -5.80, vol24h: 410000000, exchange: 'Binance', strategy: '量價背離', confirmed: true },
+  { symbol: 'WIFUSDT', name: 'WIF', type: 'CRYPTO', price: 3.18, change24h: -4.90, vol24h: 175000000, exchange: 'Bybit', strategy: '量價背離', confirmed: true },
+  { symbol: 'APTUSDT', name: 'APT', type: 'CRYPTO', price: 12.46, change24h: 4.10, vol24h: 128000000, exchange: 'Binance', strategy: '多策略融合', confirmed: true },
+  { symbol: 'NEARUSDT', name: 'NEAR', type: 'CRYPTO', price: 6.38, change24h: 2.88, vol24h: 112000000, exchange: 'Bybit', strategy: 'Vegas 通道', confirmed: true },
+  { symbol: 'ARBUSDT', name: 'ARB', type: 'CRYPTO', price: 0.918, change24h: 1.95, vol24h: 134000000, exchange: 'OKX', strategy: 'Fib 共振', confirmed: false },
+  { symbol: 'OPUSDT', name: 'OP', type: 'CRYPTO', price: 2.18, change24h: 2.02, vol24h: 98000000, exchange: 'Binance', strategy: 'Fib 共振', confirmed: false },
+  { symbol: 'INJUSDT', name: 'INJ', type: 'CRYPTO', price: 27.6, change24h: 5.45, vol24h: 119000000, exchange: 'Bybit', strategy: '突破動能', confirmed: true },
+  { symbol: 'TIAUSDT', name: 'TIA', type: 'CRYPTO', price: 7.42, change24h: -3.12, vol24h: 89000000, exchange: 'Bitget', strategy: '量價背離', confirmed: true },
+  { symbol: 'SEIUSDT', name: 'SEI', type: 'CRYPTO', price: 0.584, change24h: 4.88, vol24h: 105000000, exchange: 'Binance', strategy: '突破動能', confirmed: true },
+  { symbol: 'FETUSDT', name: 'FET', type: 'CRYPTO', price: 1.64, change24h: 3.75, vol24h: 94000000, exchange: 'OKX', strategy: '多策略融合', confirmed: true },
+  { symbol: 'RENDERUSDT', name: 'RENDER', type: 'CRYPTO', price: 8.15, change24h: 3.92, vol24h: 86000000, exchange: 'Bybit', strategy: '均線趨勢', confirmed: true },
+  { symbol: 'JUPUSDT', name: 'JUP', type: 'CRYPTO', price: 1.165, change24h: 4.25, vol24h: 91000000, exchange: 'Binance', strategy: '多策略融合', confirmed: true },
+  { symbol: 'TONUSDT', name: 'TON', type: 'CRYPTO', price: 5.74, change24h: -2.15, vol24h: 115000000, exchange: 'OKX', strategy: 'Vegas 通道', confirmed: false },
+  { symbol: 'AAVEUSDT', name: 'AAVE', type: 'CRYPTO', price: 184.2, change24h: 3.64, vol24h: 78000000, exchange: 'Binance', strategy: '均線趨勢', confirmed: true },
+  { symbol: 'UNIUSDT', name: 'UNI', type: 'CRYPTO', price: 11.42, change24h: 2.48, vol24h: 82000000, exchange: 'Bybit', strategy: 'Fib 共振', confirmed: false },
+  { symbol: 'ONEUSDT', name: 'ONE', type: 'CRYPTO', price: 0.000943, change24h: -9.45, vol24h: 18500000, exchange: 'Binance', strategy: '量價背離', confirmed: true },
+  { symbol: 'SATSUSDT', name: '1000SATS', type: 'CRYPTO', price: 0.000284, change24h: -6.20, vol24h: 42000000, exchange: 'Bitget', strategy: '量價背離', confirmed: true },
+  { symbol: 'ORDIUSDT', name: 'ORDI', type: 'CRYPTO', price: 41.8, change24h: -4.15, vol24h: 67000000, exchange: 'OKX', strategy: 'Fib 共振', confirmed: true },
+  { symbol: 'STXUSDT', name: 'STX', type: 'CRYPTO', price: 2.14, change24h: 3.05, vol24h: 59000000, exchange: 'Binance', strategy: 'Vegas 通道', confirmed: false },
+  { symbol: 'ATOMUSDT', name: 'ATOM', type: 'CRYPTO', price: 6.85, change24h: 1.74, vol24h: 54000000, exchange: 'OKX', strategy: '均線趨勢', confirmed: false },
+  { symbol: 'FILUSDT', name: 'FIL', type: 'CRYPTO', price: 5.12, change24h: 2.66, vol24h: 63000000, exchange: 'Bybit', strategy: 'Vegas 通道', confirmed: false },
+  { symbol: 'IMXUSDT', name: 'IMX', type: 'CRYPTO', price: 1.58, change24h: 3.41, vol24h: 38000000, exchange: 'Bitget', strategy: '突破動能', confirmed: true },
+  { symbol: 'NVDAUSDT', name: 'NVDA (輝達代幣)', type: 'STOCK', stockTag: 'AI 半導體美股', price: 141.80, change24h: 3.42, vol24h: 48500000, exchange: 'Bitget', strategy: '多策略融合', confirmed: true },
+  { symbol: 'TSLAUSDT', name: 'TSLA (特斯拉代幣)', type: 'STOCK', stockTag: '電動車/AI美股', price: 338.50, change24h: 4.85, vol24h: 52000000, exchange: 'Bitget', strategy: '突破動能', confirmed: true },
+  { symbol: 'AAPLUSDT', name: 'AAPL (蘋果代幣)', type: 'STOCK', stockTag: '科技權值美股', price: 229.40, change24h: 1.15, vol24h: 21500000, exchange: 'Bybit', strategy: '均線趨勢', confirmed: false },
+  { symbol: 'MSTRUSDT', name: 'MSTR (微策略代幣)', type: 'STOCK', stockTag: 'BTC 概念美股', price: 392.10, change24h: -5.60, vol24h: 64000000, exchange: 'Bitget', strategy: '量價背離', confirmed: true },
+  { symbol: 'COINUSDT', name: 'COIN (Coinbase)', type: 'STOCK', stockTag: '加密交易所美股', price: 298.70, change24h: 3.90, vol24h: 31200000, exchange: 'OKX', strategy: 'Fib 共振', confirmed: true },
+  { symbol: 'QQQUSDT', name: 'QQQ (納指100 ETF)', type: 'STOCK', stockTag: '美股指數 ETF', price: 506.20, change24h: 1.48, vol24h: 27800000, exchange: 'Bitget', strategy: 'Vegas 通道', confirmed: true }
+].map(item => ({ ...item, live: false }));
+
+let state = {
+  assets: JSON.parse(JSON.stringify(SEED_ASSETS)),
+  exStatus: {
+    Binance: { live: false, count: 0 },
+    Bybit: { live: false, count: 0 },
+    OKX: { live: false, count: 0 },
+    Bitget: { live: false, count: 0 }
+  },
+  strategyFilter: 'ALL',
+  onlyRec: false,
+  showDup: false,
+  dispatchIdx: 0,
+  trades: []
+};
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.capital) document.getElementById('capitalInput').value = saved.capital;
+    if (saved.risk) document.getElementById('riskInput').value = saved.risk;
+    if (saved.corr) {
+      document.getElementById('corrInput').value = saved.corr;
+      document.getElementById('corrVal').textContent = parseFloat(saved.corr).toFixed(2);
+    }
+    if (Array.isArray(saved.trades)) state.trades = saved.trades;
+  } catch (e) {}
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      capital: parseFloat(document.getElementById('capitalInput').value) || 1000,
+      risk: parseFloat(document.getElementById('riskInput').value) || 2.0,
+      corr: parseFloat(document.getElementById('corrInput').value) || 0.45,
+      trades: state.trades
+    }));
+  } catch (e) {}
+}
+
+function formatPrice(p) {
+  if (!Number.isFinite(p)) return '0.00';
+  if (p >= 1000) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(4);
+  if (p >= 0.01) return p.toFixed(5);
+  return p.toFixed(6);
+}
+
+function formatVol(v) {
+  if (!Number.isFinite(v)) return '0 萬';
+  if (v >= 1e8) return (v / 1e8).toFixed(2) + ' 億';
+  return (v / 1e4).toFixed(0) + ' 萬';
+}
+
+function evaluateFibEntryConfirmation(asset, bars) {
+  const chg = asset.change24h || 0;
+  const fallbackSide = chg >= 0 ? 'LONG' : 'SHORT';
+
+  if (!Array.isArray(bars) || bars.length < 8) {
+    const strong24h = Math.abs(chg) >= 3.8 && (asset.vol24h || 0) >= 20000000;
+    return {
+      confirmedEntry: false,
+      side: fallbackSide,
+      fibLevelLabel: '待K線驗證',
+      fibAnchorLow: null,
+      fibAnchorHigh: null,
+      confirmNote: strong24h ? '動能達標·待K線收盤確認' : '缺少K線結構'
+    };
+  }
+
+  const lastBar = bars[bars.length - 1];
+  const prevBar = bars[bars.length - 2] || lastBar;
+  const close = +lastBar.c;
+  const open = +lastBar.o;
+  const high = +lastBar.h;
+  const low = +lastBar.l;
+
+  const histBars = bars.slice(0, -1);
+  const swingLow = Math.min(...histBars.map(b => +b.l));
+  const swingHigh = Math.max(...histBars.map(b => +b.h));
+  const span = swingHigh - swingLow;
+
+  if (span <= 0) {
+    return {
+      confirmedEntry: false,
+      side: fallbackSide,
+      fibLevelLabel: '無有效波段',
+      fibAnchorLow: swingLow,
+      fibAnchorHigh: swingHigh,
+      confirmNote: '高低點區間為 0'
+    };
+  }
+
+  const fib382 = swingHigh - span * 0.382;
+  const fib500 = swingHigh - span * 0.500;
+  const fib618 = swingHigh - span * 0.618;
+  const fib786 = swingHigh - span * 0.786;
+
+  const nearFibSupport = (low <= fib500 * 1.004 && close >= fib618 * 0.997) ||
+                         (low <= fib618 * 1.004 && close >= fib786 * 0.996);
+  const candleRange = Math.max(high - low, 1e-12);
+  const bodyRatio = Math.abs(close - open) / candleRange;
+  const upperWickRatio = (high - Math.max(open, close)) / candleRange;
+
+  const validBreakoutLong = close > swingHigh && bodyRatio >= 0.38 && upperWickRatio <= 0.35 && close > open;
+  const validPullbackLong = nearFibSupport && close > open && (close >= prevBar.c || close > fib618);
+
+  const nearFibResistance = (high >= fib618 * 0.996 && close <= fib500 * 1.003) ||
+                            (high >= fib500 * 0.996 && close <= fib382 * 1.004);
+  const lowerWickRatio = (Math.min(open, close) - low) / candleRange;
+
+  const validBreakdownShort = close < swingLow && bodyRatio >= 0.38 && lowerWickRatio <= 0.35 && close < open;
+  const validPullbackShort = nearFibResistance && close < open && (close <= prevBar.c || close < fib500);
+
+  let side = fallbackSide;
+  let confirmedEntry = false;
+  let fibLevelLabel = 'Fib 觀察中';
+  let confirmNote = '未達確認進場條件（防假突破）';
+
+  if (validBreakoutLong) {
+    side = 'LONG';
+    confirmedEntry = true;
+    fibLevelLabel = 'Fib 突破確認';
+    confirmNote = `實體收盤站穩波段高 ${formatPrice(swingHigh)}`;
+  } else if (validPullbackLong) {
+    side = 'LONG';
+    confirmedEntry = true;
+    fibLevelLabel = close >= fib500 ? 'Fib 0.5 承接確認' : 'Fib 0.618 承接確認';
+    confirmNote = '回踩菲波支撐收陽確認';
+  } else if (validBreakdownShort) {
+    side = 'SHORT';
+    confirmedEntry = true;
+    fibLevelLabel = 'Fib 跌破確認';
+    confirmNote = `實體收盤跌破波段低 ${formatPrice(swingLow)}`;
+  } else if (validPullbackShort) {
+    side = 'SHORT';
+    confirmedEntry = true;
+    fibLevelLabel = close <= fib500 ? 'Fib 0.5 壓制確認' : 'Fib 0.618 壓制確認';
+    confirmNote = '反彈菲波阻力收黑確認';
+  } else if (high > swingHigh && close <= swingHigh) {
+    side = 'SHORT';
+    fibLevelLabel = '疑似假突破回落';
+    confirmNote = '上破前高但未收盤站穩·防假突破';
+  } else if (low < swingLow && close >= swingLow) {
+    side = 'LONG';
+    fibLevelLabel = '疑似假跌破收回';
+    confirmNote = '下破前低但未收盤站穩·防假跌破';
+  } else if (close >= fib500) {
+    side = 'LONG';
+    fibLevelLabel = 'Fib 0.382~0.5 區間';
+    confirmNote = '等待回踩或有效收盤突破確認';
+  } else {
+    side = 'SHORT';
+    fibLevelLabel = 'Fib 0.5~0.618 區間';
+    confirmNote = '等待反彈承壓或有效收盤跌破確認';
+  }
+
+  return {
+    confirmedEntry,
+    side,
+    fibLevelLabel,
+    fibAnchorLow: swingLow,
+    fibAnchorHigh: swingHigh,
+    confirmNote
+  };
+}
+
+function getUSStockMarketSession(nowDate = new Date()) {
+  const etParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(nowDate);
+
+  const partMap = {};
+  etParts.forEach(p => { partMap[p.type] = p.value; });
+  const wd = partMap.weekday;
+  const hour = parseInt(partMap.hour, 10) || 0;
+  const minute = parseInt(partMap.minute, 10) || 0;
+  const minsOfDay = hour * 60 + minute;
+  const timeStrET = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} ET`;
+
+  const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(wd);
+  const regularOpenMins = 9 * 60 + 30;
+  const regularCloseMins = 16 * 60;
+  const isRegularOpen = isWeekday && minsOfDay >= regularOpenMins && minsOfDay < regularCloseMins;
+
+  if (isRegularOpen) {
+    return {
+      isOpen: true,
+      sessionLabel: '美股開盤中',
+      detail: `美股常規盤交易中 (${timeStrET})`
+    };
+  }
+
+  let reason = '美股休市/非開盤時段';
+  if (!isWeekday) reason = `週末美股休市 (${wd} ${timeStrET})`;
+  else if (minsOfDay < regularOpenMins) reason = `美股尚未開盤 (${timeStrET}，開盤 09:30 ET)`;
+  else reason = `美股已收盤 (${timeStrET}，收盤 16:00 ET)`;
+
+  return {
+    isOpen: false,
+    sessionLabel: '美股收盤/休市',
+    detail: reason
+  };
+}
+
+function isConfirmedRecommendation(asset, fibInfo) {
+  if (!asset || (asset.vol24h || 0) < MIN_VOL_USDT) return false;
+  if (!fibInfo) return false;
+  if (asset.type === 'STOCK') {
+    const mkt = getUSStockMarketSession();
+    if (!mkt.isOpen) return false;
+  }
+  return Boolean(fibInfo.confirmedEntry);
+}
+
+function computeStructureStop(entry, side, recentBars, fallbackPct, assetType = 'CRYPTO') {
+  const maxReasonableSlPct = assetType === 'STOCK' ? 3.5 : 4.5;
+  const minReasonableSlPct = 0.35;
+  const bufferRatio = 0.08;
+
+  if (entry > 0 && Array.isArray(recentBars) && recentBars.length >= 3) {
+    const nearBars = recentBars.slice(-8);
+    const lows = nearBars.map(b => +b.l).filter(v => Number.isFinite(v) && v > 0);
+    const highs = nearBars.map(b => +b.h).filter(v => Number.isFinite(v) && v > 0);
+
+    if (side === 'LONG' && lows.length >= 3) {
+      const swingLow = Math.min(...lows);
+      const refHigh = highs.length ? Math.max(...highs) : entry;
+      const rangeSpan = Math.min(Math.max(refHigh - swingLow, entry * 0.002), entry * (maxReasonableSlPct / 100));
+      const slPrice = swingLow - rangeSpan * bufferRatio;
+      const rawPct = ((entry - slPrice) / entry) * 100;
+
+      if (slPrice >= entry * 0.998 || rawPct <= 0) {
+        const pct = Math.min(maxReasonableSlPct, Math.max(minReasonableSlPct, fallbackPct));
+        return { slPrice: entry * (1 - pct / 100), slPct: parseFloat(pct.toFixed(2)), structureRef: `結構偏近·合理止損 ${pct.toFixed(2)}%` };
+      }
+      if (rawPct > maxReasonableSlPct) {
+        return { slPrice: entry * (1 - maxReasonableSlPct / 100), slPct: parseFloat(maxReasonableSlPct.toFixed(2)), structureRef: `上限收斂 ${maxReasonableSlPct.toFixed(1)}% (原波段 ${formatPrice(swingLow)})` };
+      }
+      const clampedPct = Math.max(minReasonableSlPct, rawPct);
+      return { slPrice: entry * (1 - clampedPct / 100), slPct: parseFloat(clampedPct.toFixed(2)), structureRef: `近8K低 ${formatPrice(swingLow)}` };
+    }
+
+    if (side === 'SHORT' && highs.length >= 3) {
+      const swingHigh = Math.max(...highs);
+      const refLow = lows.length ? Math.min(...lows) : entry;
+      const rangeSpan = Math.min(Math.max(swingHigh - refLow, entry * 0.002), entry * (maxReasonableSlPct / 100));
+      const slPrice = swingHigh + rangeSpan * bufferRatio;
+      const rawPct = ((slPrice - entry) / entry) * 100;
+
+      if (slPrice <= entry * 1.002 || rawPct <= 0) {
+        const pct = Math.min(maxReasonableSlPct, Math.max(minReasonableSlPct, fallbackPct));
+        return { slPrice: entry * (1 + pct / 100), slPct: parseFloat(pct.toFixed(2)), structureRef: `結構偏近·合理止損 ${pct.toFixed(2)}%` };
+      }
+      if (rawPct > maxReasonableSlPct) {
+        return { slPrice: entry * (1 + maxReasonableSlPct / 100), slPct: parseFloat(maxReasonableSlPct.toFixed(2)), structureRef: `上限收斂 ${maxReasonableSlPct.toFixed(1)}% (原波段 ${formatPrice(swingHigh)})` };
+      }
+      const clampedPct = Math.max(minReasonableSlPct, rawPct);
+      return { slPrice: entry * (1 + clampedPct / 100), slPct: parseFloat(clampedPct.toFixed(2)), structureRef: `近8K高 ${formatPrice(swingHigh)}` };
+    }
+  }
+
+  const pct = Math.min(maxReasonableSlPct, Math.max(minReasonableSlPct, fallbackPct));
+  const slPrice = side === 'LONG' ? entry * (1 - pct / 100) : entry * (1 + pct / 100);
+  return { slPrice, slPct: parseFloat(pct.toFixed(2)), structureRef: '無K線結構·基準估算' };
+}
+
+function analyzeAsset(asset, recentBars = null) {
+  const capital = Math.max(10, parseFloat(document.getElementById('capitalInput').value) || 1000);
+  const riskPct = Math.max(0.1, parseFloat(document.getElementById('riskInput').value) || 2.0);
+  const chg = asset.change24h || 0;
+  const absChg = Math.abs(chg);
+  const fallbackPct = asset.type === 'STOCK' ? 1.50 : 2.00;
+
+  const barsToUse = Array.isArray(recentBars) && recentBars.length
+    ? recentBars
+    : (Array.isArray(asset._recentBars) ? asset._recentBars : null);
+
+  let dynR = 1.8;
+  if (asset.strategy === '多策略融合') dynR = 2.0;
+  else if (asset.strategy === '突破動能') dynR = 2.1;
+  else if (asset.strategy === '量價背離') dynR = 1.9;
+  else if (asset.strategy === 'Fib 共振') dynR = 1.8;
+  else if (asset.strategy === 'Vegas 通道') dynR = 1.9;
+  else dynR = 1.7;
+
+  if (asset.type === 'STOCK') dynR = Math.max(1.6, dynR - 0.1);
+  if (absChg > 7.5) dynR = Math.max(1.5, dynR - 0.2);
+  dynR = parseFloat(dynR.toFixed(1));
+
+  const fibEval = evaluateFibEntryConfirmation(asset, barsToUse);
+  let side = fibEval.confirmedEntry ? fibEval.side : (chg >= 0 ? 'LONG' : 'SHORT');
+  if (asset.strategy === '量價背離') {
+    if (Array.isArray(barsToUse) && barsToUse.length >= 6) {
+      const recent = barsToUse.slice(-6);
+      const vols = recent.map(b => +b.v || 0).filter(v => v > 0);
+      const lastB = recent[recent.length - 1];
+      const avgVol = vols.length >= 2 ? vols.slice(0, -1).reduce((s, x) => s + x, 0) / (vols.length - 1) : 0;
+      const lastVol = +lastB.v || 0;
+      const volShrinking = avgVol > 0 && lastVol > 0 && lastVol <= avgVol * 0.85;
+      const highSweepWeakClose = lastB.h >= Math.max(...recent.slice(0, -1).map(b => +b.h)) && lastB.c < lastB.o && volShrinking;
+      const lowSweepStrongClose = lastB.l <= Math.min(...recent.slice(0, -1).map(b => +b.l)) && lastB.c > lastB.o && volShrinking;
+
+      if (highSweepWeakClose) side = 'SHORT';
+      else if (lowSweepStrongClose) side = 'LONG';
+      else side = fibEval.confirmedEntry ? fibEval.side : (chg >= 0 ? 'LONG' : 'SHORT');
+    } else {
+      side = chg >= 0 ? 'LONG' : 'SHORT';
+    }
+  } else if (!fibEval.confirmedEntry) {
+    if (chg > 7.5) side = 'SHORT';
+    else if (chg < -7.5) side = 'LONG';
+  }
+
+  const confirmedEntry = isConfirmedRecommendation(asset, fibEval);
+  const entry = asset.price;
+  const stopInfo = computeStructureStop(entry, side, barsToUse, fallbackPct, asset.type);
+  const slPct = stopInfo.slPct;
+  const slPrice = stopInfo.slPrice;
+  const tpPct = parseFloat((slPct * dynR).toFixed(2));
+  const tpPrice = side === 'LONG' ? entry * (1 + tpPct / 100) : entry * (1 - tpPct / 100);
+
+  const riskAmount = capital * (riskPct / 100);
+  const suggestedPos = riskAmount / (Math.max(0.05, slPct) / 100);
+
+  return {
+    side,
+    dynR,
+    slPct,
+    tpPct,
+    entry,
+    tpPrice,
+    slPrice,
+    riskAmount: parseFloat(riskAmount.toFixed(2)),
+    structureRef: stopInfo.structureRef,
+    confirmedEntry,
+    fibLevelLabel: fibEval.fibLevelLabel,
+    confirmNote: fibEval.confirmNote,
+    suggestedPos: parseFloat(suggestedPos.toFixed(1))
+  };
+}
+
+function applyBehavioralDedupe(list) {
+  const threshold = parseFloat(document.getElementById('corrInput').value) || 0.45;
+  const sorted = [...list].sort((a, b) => b.vol24h - a.vol24h);
+  const kept = [];
+  let dupCount = 0;
+
+  for (const item of sorted) {
+    if (item.vol24h < MIN_VOL_USDT) continue;
+    const similar = kept.find(k =>
+      k.type === item.type &&
+      k.strategy === item.strategy &&
+      Math.abs(k.change24h - item.change24h) <= threshold
+    );
+    if (similar) {
+      dupCount++;
+      item._isDup = true;
+      item._dupOf = similar.symbol;
+    } else {
+      item._isDup = false;
+      item._dupOf = null;
+    }
+    kept.push(item);
+  }
+  return { list: kept, dupCount };
+}
+
+async function fetchWithTimeout(url, ms = FETCH_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+async function fetchKlinesAfterOrderTime(symbol, sinceMs) {
+  const elapsedMin = Math.max(1, (Date.now() - (sinceMs || Date.now())) / 60000);
+  let interval = '15m';
+  let limit = 120;
+  if (elapsedMin > 4800) { interval = '1h'; limit = 240; }
+  else if (elapsedMin > 1500) { interval = '15m'; limit = 200; }
+  else { interval = '5m'; limit = 180; }
+
+  const parseBars = (rows) => rows
+    .map(r => ({ t: +r[0], o: +r[1], h: +r[2], l: +r[3], c: +r[4] }))
+    .filter(b => !sinceMs || (b.t + 60000) >= sinceMs);
+
+  try {
+    const rows = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`, 2200);
+    if (Array.isArray(rows) && rows.length) {
+      const bars = parseBars(rows);
+      if (bars.length) return { source: `Binance ${interval} 區間K線`, bars };
+    }
+  } catch (e) {}
+
+  const byInt = interval === '5m' ? '5' : (interval === '15m' ? '15' : '60');
+  try {
+    const json = await fetchWithTimeout(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${byInt}&limit=${limit}`, 2200);
+    const list = json.result?.list || [];
+    if (list.length) {
+      const bars = parseBars([...list].reverse());
+      if (bars.length) return { source: `Bybit ${interval} 區間K線`, bars };
+    }
+  } catch (e) {}
+
+  return null;
+}
+
+function evaluateSingleTradeByPrice(t, curPrice) {
+  if (!curPrice || isNaN(curPrice)) return false;
+  t.lastPrice = curPrice;
+  if (t.manualLock) return false;
+
+  const diffPct = t.side === 'LONG'
+    ? ((curPrice - t.entry) / t.entry) * 100
+    : ((t.entry - curPrice) / t.entry) * 100;
+  t.unrealizedPnl = parseFloat((t.pos * (diffPct / 100)).toFixed(2));
+
+  if (t.status !== '進行中') return false;
+
+  if (t.side === 'LONG') {
+    if (curPrice >= t.tpPrice) {
+      t.status = '已止盈';
+      t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+      t.settledReason = `自動觸盈 @ ${formatPrice(curPrice)}`;
+      return true;
+    }
+    if (curPrice <= t.slPrice) {
+      t.status = '已止損';
+      t.pnl = parseFloat((-t.riskU).toFixed(2));
+      t.settledReason = `自動觸損 @ ${formatPrice(curPrice)}`;
+      return true;
+    }
+  } else {
+    if (curPrice <= t.tpPrice) {
+      t.status = '已止盈';
+      t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+      t.settledReason = `自動觸盈 @ ${formatPrice(curPrice)}`;
+      return true;
+    }
+    if (curPrice >= t.slPrice) {
+      t.status = '已止損';
+      t.pnl = parseFloat((-t.riskU).toFixed(2));
+      t.settledReason = `自動觸損 @ ${formatPrice(curPrice)}`;
+      return true;
+    }
+  }
+  return false;
+}
+
+function evaluateTradeAgainstPath(t, bars, fallbackPrice) {
+  if (t.manualLock) return false;
+  if (fallbackPrice && !isNaN(fallbackPrice)) {
+    t.lastPrice = fallbackPrice;
+    const diffPct = t.side === 'LONG'
+      ? ((fallbackPrice - t.entry) / t.entry) * 100
+      : ((t.entry - fallbackPrice) / t.entry) * 100;
+    t.unrealizedPnl = parseFloat((t.pos * (diffPct / 100)).toFixed(2));
+  }
+
+  if (t.status !== '進行中') return false;
+
+  if (Array.isArray(bars) && bars.length) {
+    for (const b of bars) {
+      if (t.side === 'LONG') {
+        const hitSL = b.l <= t.slPrice;
+        const hitTP = b.h >= t.tpPrice;
+        if (hitSL && hitTP) {
+          const distSL = Math.abs(b.o - t.slPrice);
+          const distTP = Math.abs(b.o - t.tpPrice);
+          if (distSL <= distTP) {
+            t.status = '已止損';
+            t.pnl = parseFloat((-t.riskU).toFixed(2));
+            t.settledReason = `區間K線先觸損 @ ${formatPrice(t.slPrice)}`;
+          } else {
+            t.status = '已止盈';
+            t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+            t.settledReason = `區間K線先觸盈 @ ${formatPrice(t.tpPrice)}`;
+          }
+          return true;
+        }
+        if (hitSL) {
+          t.status = '已止損';
+          t.pnl = parseFloat((-t.riskU).toFixed(2));
+          t.settledReason = `區間K線觸損 @ ${formatPrice(t.slPrice)}`;
+          return true;
+        }
+        if (hitTP) {
+          t.status = '已止盈';
+          t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+          t.settledReason = `區間K線觸盈 @ ${formatPrice(t.tpPrice)}`;
+          return true;
+        }
+      } else {
+        const hitSL = b.h >= t.slPrice;
+        const hitTP = b.l <= t.tpPrice;
+        if (hitSL && hitTP) {
+          const distSL = Math.abs(b.o - t.slPrice);
+          const distTP = Math.abs(b.o - t.tpPrice);
+          if (distSL <= distTP) {
+            t.status = '已止損';
+            t.pnl = parseFloat((-t.riskU).toFixed(2));
+            t.settledReason = `區間K線先觸損 @ ${formatPrice(t.slPrice)}`;
+          } else {
+            t.status = '已止盈';
+            t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+            t.settledReason = `區間K線先觸盈 @ ${formatPrice(t.tpPrice)}`;
+          }
+          return true;
+        }
+        if (hitSL) {
+          t.status = '已止損';
+          t.pnl = parseFloat((-t.riskU).toFixed(2));
+          t.settledReason = `區間K線觸損 @ ${formatPrice(t.slPrice)}`;
+          return true;
+        }
+        if (hitTP) {
+          t.status = '已止盈';
+          t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2));
+          t.settledReason = `區間K線觸盈 @ ${formatPrice(t.tpPrice)}`;
+          return true;
+        }
+      }
+    }
+  }
+
+  return evaluateSingleTradeByPrice(t, fallbackPrice);
+}
+
+async function autoEvaluateOpenTrades(forceFetch = false) {
+  const openTrades = state.trades.filter(t => t.status === '進行中');
+  if (!openTrades.length) {
+    if (forceFetch) renderAll();
+    return;
+  }
+
+  const assetMap = new Map(state.assets.map(a => [a.symbol, a]));
+  let settledNow = 0;
+  let pathChecked = 0;
+
+  const uniqueSyms = [...new Set(openTrades.map(t => t.symbol))];
+  const klineBySym = new Map();
+
+  await Promise.allSettled(uniqueSyms.map(async sym => {
+    const symTrades = openTrades.filter(x => x.symbol === sym);
+    const earliest = Math.min(...symTrades.map(x => x.orderTimestamp || Date.now() - 3600000));
+    const kRes = await fetchKlinesAfterOrderTime(sym, earliest);
+    if (kRes && kRes.bars && kRes.bars.length) {
+      klineBySym.set(sym, kRes.bars);
+      const lastClose = kRes.bars[kRes.bars.length - 1].c;
+      const a = assetMap.get(sym);
+      if (a && lastClose) { a.price = lastClose; a.live = true; }
+    } else if (forceFetch) {
+      try {
+        const res = await fetchWithTimeout(`https://api.binance.com/api/v3/ticker/price?symbol=${sym}`, 2000);
+        if (res && res.price) {
+          const p = parseFloat(res.price);
+          const a = assetMap.get(sym);
+          if (a) { a.price = p; a.live = true; }
+        }
+      } catch (e) {}
+    }
+  }));
+
+  state.trades.forEach(t => {
+    if (t.status !== '進行中') return;
+    const a = assetMap.get(t.symbol);
+    const px = a ? a.price : t.lastPrice;
+    const allBars = klineBySym.get(t.symbol);
+    const sinceBars = Array.isArray(allBars)
+      ? allBars.filter(b => !t.orderTimestamp || (b.t + 60000) >= t.orderTimestamp)
+      : null;
+
+    if (sinceBars && sinceBars.length) pathChecked++;
+    if (evaluateTradeAgainstPath(t, sinceBars, px)) {
+      settledNow++;
+    }
+  });
+
+  saveSettings();
+  renderAll();
+  if (forceFetch) {
+    document.getElementById('syncSummary').textContent = settledNow > 0
+      ? `區間路徑檢核完成：自動結算 ${settledNow} 筆單據（已比對下單後 K 線高低點）`
+      : `區間路徑檢核完成（${pathChecked} 檔已回溯下單後 K 線）：目前仍在持倉中`;
+  }
+}
+
+function renderExBar() {
+  const bar = document.getElementById('exStatusBar');
+  bar.innerHTML = Object.entries(state.exStatus).map(([ex, info]) => `
+    <div class="ex-pill">
+      <span><span class="dot ${info.live ? 'live' : 'fallback'}"></span><strong>${ex}</strong></span>
+      <span style="color:${info.live ? 'var(--green)' : 'var(--amber)'};">${info.live ? '即時報價' : '未取得/備援'}</span>
+    </div>
+  `).join('');
+}
+
+function renderRowHTML(asset, showDupCol = false, isStockCol = false) {
+  const a = analyzeAsset(asset);
+  const chgCls = asset.change24h >= 0 ? 'pos' : 'neg';
+  const chgSign = asset.change24h >= 0 ? '+' : '';
+  const liveTag = asset.live
+    ? `<span style="color:var(--green);font-size:11px;">● 即時報價</span>`
+    : `<span style="color:var(--amber);font-size:11px;">● 未取得/備援</span>`;
+
+  return `
+    <tr style="${asset._isDup ? 'opacity:0.65;' : ''}">
+      <td>
+        <strong>${asset.symbol}</strong>
+        ${(() => {
+          if (asset.type === 'STOCK') {
+            const mkt = getUSStockMarketSession();
+            if (!mkt.isOpen) {
+              return `<span class="badge" style="font-size:10px;color:var(--amber);">${mkt.sessionLabel}·不推薦</span>`;
+            }
+          }
+          return a.confirmedEntry
+            ? '<span class="tag tag-rec">菲波確認推薦</span>'
+            : `<span class="badge" style="font-size:10px;color:var(--text-muted);">${a.fibLevelLabel}</span>`;
+        })()}
+        <div style="font-size:10px;color:${a.confirmedEntry ? 'var(--green)' : 'var(--text-dim)'};">${asset.type === 'STOCK' && !getUSStockMarketSession().isOpen ? getUSStockMarketSession().detail : a.confirmNote}</div>
+        ${isStockCol && asset.stockTag ? `<div style="font-size:11px;color:var(--purple);">${asset.stockTag}</div>` : ''}
+      </td>
+      <td>${asset.exchange}<br/>${liveTag}</td>
+      <td><strong>${formatPrice(asset.price)}</strong></td>
+      <td class="${chgCls}">${chgSign}${asset.change24h.toFixed(2)}%</td>
+      <td>${formatVol(asset.vol24h)}</td>
+      ${showDupCol ? `<td>${asset._isDup ? `<span style="color:var(--amber);">連動(${asset._dupOf})</span>` : '<span style="color:var(--green);">獨立主導</span>'}</td>` : ''}
+      <td>
+        <span class="badge" style="margin-bottom:3px;">${asset.strategy}</span><br/>
+        <span class="tag ${a.side === 'LONG' ? 'tag-long' : 'tag-short'}">${a.side === 'LONG' ? '做多 LONG' : '做空 SHORT'}</span>
+        <strong style="color:var(--blue);margin-left:4px;">+${a.dynR.toFixed(1)}R</strong>
+      </td>
+      <td>
+        進場 ${formatPrice(a.entry)}<br/>
+        <span class="pos">TP ${formatPrice(a.tpPrice)} (+${a.tpPct}%)</span><br/>
+        <span class="neg">SL ${formatPrice(a.slPrice)} (-${a.slPct}%)</span><div style="font-size:10px;color:var(--text-dim);">${a.structureRef}</div>
+      </td>
+      <td><strong>${a.suggestedPos.toFixed(1)} U</strong></td>
+      <td>
+        <button class="primary" style="padding:5px 8px;font-size:11px;" onclick="quickOrder('${asset.symbol}')">接單記錄</button>
+      </td>
+    </tr>
+  `;
+}
+
+function getFilteredAssets() {
+  const q = (document.getElementById('searchInput').value || '').trim().toUpperCase();
+  const { list, dupCount } = applyBehavioralDedupe(state.assets);
+  document.getElementById('toggleDupBtn').textContent = `${state.showDup ? '隱藏' : '顯示'}同型連動去重幣 (${dupCount})`;
+
+  return list.filter(item => {
+    if (!state.showDup && item._isDup) return false;
+    if (state.strategyFilter !== 'ALL' && item.strategy !== state.strategyFilter) return false;
+    if (state.onlyRec && !item.confirmed) return false;
+    if (q) {
+      const hay = `${item.symbol} ${item.name} ${item.strategy} ${item.stockTag || ''}`.toUpperCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function getActivePositionSymbolsSet() {
+  const activeSet = new Set();
+  (state.trades || []).forEach(t => {
+    if (!t || !t.symbol) return;
+    if (t.status === '進行中' && !t.allowRedispatch) {
+      activeSet.add(String(t.symbol).toUpperCase());
+    }
+  });
+  return activeSet;
+}
+
+function renderAll() {
+  renderExBar();
+  const filtered = getFilteredAssets().map(item => {
+    const an = analyzeAsset(item);
+    return { ...item, confirmed: an.confirmedEntry, _analysis: an };
+  });
+  const recs = filtered.filter(x => x.confirmed);
+  const stocks = filtered.filter(x => x.type === 'STOCK');
+
+  document.getElementById('recCountBadge').textContent = `${recs.length} 檔確定推薦`;
+  const mktNow = getUSStockMarketSession();
+  const mktBadge = document.getElementById('usMarketSessionBadge');
+  if (mktBadge) {
+    mktBadge.textContent = mktNow.detail;
+    mktBadge.className = `badge ${mktNow.isOpen ? 'green' : 'amber'}`;
+  }
+  document.getElementById('stockCountBadge').textContent = `${stocks.length} 檔股票代幣`;
+  document.getElementById('mainCountBadge').textContent = `${filtered.length} 檔獨立標的`;
+
+  updateNavBadges(recs.length, stocks.length, filtered.length);
+
+  document.getElementById('recTableBody').innerHTML = recs.length
+    ? recs.map(x => renderRowHTML(x, false, false)).join('')
+    : `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);">目前篩選條件下無確定推薦標的</td></tr>`;
+
+  document.getElementById('stockTableBody').innerHTML = stocks.length
+    ? stocks.map(x => renderRowHTML(x, false, true)).join('')
+    : `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);">目前篩選條件下無股票代幣標的</td></tr>`;
+
+  document.getElementById('mainTableBody').innerHTML = filtered.length
+    ? filtered.map(x => renderRowHTML(x, true, false)).join('')
+    : `<tr><td colspan="10" style="text-align:center;color:var(--text-dim);">目前篩選條件下無符合標的</td></tr>`;
+
+  const activePosSet = getActivePositionSymbolsSet();
+  const baseQueue = recs.length
+    ? recs
+    : filtered.filter(item => item.type !== 'STOCK' || getUSStockMarketSession().isOpen);
+  const candidateQueue = baseQueue.length ? baseQueue : filtered;
+  const dedupedQueue = candidateQueue.filter(item => !activePosSet.has(String(item.symbol).toUpperCase()));
+  const skippedActiveCount = candidateQueue.length - dedupedQueue.length;
+  renderDispatchDock(dedupedQueue, skippedActiveCount);
+  renderKPIAndTrades();
+}
+
+function setStrategyFilter(strat, btn) {
+  state.strategyFilter = strat;
+  document.querySelectorAll('#strategyFilterBar button[data-strat]').forEach(b => b.classList.remove('active-tab'));
+  btn.classList.add('active-tab');
+  renderAll();
+}
+
+function toggleOnlyRec() {
+  state.onlyRec = !state.onlyRec;
+  document.getElementById('onlyRecBtn').classList.toggle('active-tab', state.onlyRec);
+  renderAll();
+}
+
+function toggleShowDup() {
+  state.showDup = !state.showDup;
+  renderAll();
+}
+
+let currentQueue = [];
+let lastSkippedActiveCount = 0;
+
+function renderDispatchDock(queue, skippedActiveCount = 0) {
+  currentQueue = queue;
+  lastSkippedActiveCount = skippedActiveCount;
+  const sel = document.getElementById('dispatchSelect');
+  if (!queue.length) {
+    document.getElementById('dispatchCounter').textContent = '派單 0 / 0';
+    sel.innerHTML = '<option>無可用派單</option>';
+    document.getElementById('dispatchDetailText').textContent = skippedActiveCount > 0
+      ? `目前符合條件的 ${skippedActiveCount} 檔標的皆在「持倉中（進行中）」，已自動跳過不重複派單。`
+      : '請調整篩選條件以載入派單';
+    return;
+  }
+  if (state.dispatchIdx >= queue.length) state.dispatchIdx = 0;
+  sel.innerHTML = queue.map((item, i) => {
+    const sign = item.change24h >= 0 ? '+' : '';
+    const statusTxt = item.live ? '即時報價' : '備援報價';
+    return `<option value="${i}" ${i === state.dispatchIdx ? 'selected' : ''}>#${i + 1} ${item.symbol} (${sign}${item.change24h.toFixed(2)}%・${item.strategy}・${statusTxt})</option>`;
+  }).join('');
+
+  const cur = queue[state.dispatchIdx];
+  const a = analyzeAsset(cur);
+  document.getElementById('dispatchSideSelect').value = a.side;
+  updateDispatchSummary();
+}
+
+function updateDispatchSummary() {
+  if (!currentQueue.length) return;
+  const cur = currentQueue[state.dispatchIdx];
+  const side = document.getElementById('dispatchSideSelect').value;
+  const a = analyzeAsset(cur);
+  const tpPrice = side === 'LONG' ? cur.price * (1 + a.tpPct / 100) : cur.price * (1 - a.tpPct / 100);
+  const slPrice = side === 'LONG' ? cur.price * (1 - a.slPct / 100) : cur.price * (1 + a.slPct / 100);
+  const sign = cur.change24h >= 0 ? '+' : '';
+
+  document.getElementById('dispatchCounter').textContent = `派單 ${state.dispatchIdx + 1} / ${currentQueue.length}`;
+  const qBadge = document.getElementById('dispatchQuoteBadge');
+  qBadge.textContent = cur.live ? '即時報價' : '未取得/備援';
+  qBadge.className = `badge ${cur.live ? 'green' : 'amber'}`;
+
+  const nextItem = currentQueue[(state.dispatchIdx + 1) % currentQueue.length];
+  const riskPctVal = parseFloat(document.getElementById('riskInput').value) || 2.0;
+  const calcSlPct = parseFloat((Math.abs(slPrice - cur.price) / cur.price * 100).toFixed(2));
+  const calcPos = parseFloat((a.riskAmount / (Math.max(0.05, calcSlPct) / 100)).toFixed(1));
+  const skipNote = lastSkippedActiveCount > 0 ? `（已自動略過 ${lastSkippedActiveCount} 檔持倉中標的）` : '';
+
+  document.getElementById('dispatchDetailText').innerHTML = `
+    <strong>${cur.symbol}</strong> (${sign}${cur.change24h.toFixed(2)}%・${cur.strategy}・${a.structureRef})・現價 ${formatPrice(cur.price)}・
+    單一 TP ${formatPrice(tpPrice)} (<span class="pos">${side === 'LONG' ? '+' : '-'}${a.tpPct}%・+${a.dynR}R</span>)・
+    結構止損 ${formatPrice(slPrice)} (<span class="neg">${side === 'LONG' ? '-' : '+'}${calcSlPct}%</span> → 觸損虧本金 ${riskPctVal}% = <strong>${a.riskAmount.toFixed(2)} U</strong>)・
+    建議倉位價值 <strong>${calcPos.toFixed(1)} USDT</strong> ${skipNote}<br/>
+    下一張：#${((state.dispatchIdx + 1) % currentQueue.length) + 1} ${nextItem.symbol} (${nextItem.strategy})
+  `;
+}
+
+function selectDispatchIndex(idx) {
+  state.dispatchIdx = idx;
+  renderDispatchDock(currentQueue, lastSkippedActiveCount);
+}
+function prevDispatch() {
+  if (!currentQueue.length) return;
+  state.dispatchIdx = (state.dispatchIdx - 1 + currentQueue.length) % currentQueue.length;
+  renderDispatchDock(currentQueue, lastSkippedActiveCount);
+}
+function nextDispatch() {
+  if (!currentQueue.length) return;
+  state.dispatchIdx = (state.dispatchIdx + 1) % currentQueue.length;
+  renderDispatchDock(currentQueue, lastSkippedActiveCount);
+}
+function toggleDockMinimize() {
+  const dock = document.getElementById('dispatchDock');
+  dock.classList.toggle('minimized');
+  document.getElementById('dockMinBtn').textContent = dock.classList.contains('minimized') ? '+ 展開' : '- 縮小';
+}
+
+function createTradeFromAsset(asset, overrideSide = null, sourceLabel = '手動接單', status = '進行中') {
+  const a = analyzeAsset(asset);
+  const side = overrideSide || a.side;
+  const tpPrice = side === 'LONG' ? asset.price * (1 + a.tpPct / 100) : asset.price * (1 - a.tpPct / 100);
+  const slPrice = side === 'LONG' ? asset.price * (1 - a.slPct / 100) : asset.price * (1 + a.slPct / 100);
+  const riskU = a.suggestedPos * (a.slPct / 100);
+  let pnl = 0;
+  if (status === '已止盈') pnl = parseFloat((riskU * a.dynR).toFixed(2));
+  if (status === '已止損') pnl = parseFloat((-riskU).toFixed(2));
+
+  const trade = {
+    id: Date.now() + Math.random(),
+    orderTimestamp: Date.now(),
+    time: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
+    symbol: asset.symbol,
+    type: asset.type,
+    confirmed: asset.confirmed,
+    strategy: asset.strategy,
+    source: sourceLabel,
+    side,
+    entry: asset.price,
+    lastPrice: asset.price,
+    tpPrice,
+    slPrice,
+    tpPct: a.tpPct,
+    slPct: a.slPct,
+    dynR: a.dynR,
+    pos: a.suggestedPos,
+    riskU: parseFloat(riskU.toFixed(2)),
+    unrealizedPnl: 0,
+    pnl,
+    status,
+    manualLock: false
+  };
+
+  state.trades.unshift(trade);
+  saveSettings();
+  autoEvaluateOpenTrades(true);
+}
+
+function acceptDispatchOrder() {
+  if (!currentQueue.length) return;
+  const cur = currentQueue[state.dispatchIdx];
+  const side = document.getElementById('dispatchSideSelect').value;
+  state.dispatchIdx = 0;
+  createTradeFromAsset(cur, side, '確定推薦接單', '進行中');
+  renderAll();
+}
+
+function recordCurrentDispatch() {
+  if (!currentQueue.length) return;
+  const cur = currentQueue[state.dispatchIdx];
+  const side = document.getElementById('dispatchSideSelect').value;
+  state.dispatchIdx = 0;
+  createTradeFromAsset(cur, side, '派單記錄', '進行中');
+  renderAll();
+}
+
+function quickOrder(symbol) {
+  const item = state.assets.find(x => x.symbol === symbol);
+  if (!item) return;
+  createTradeFromAsset(item, null, '列表快速接單', '進行中');
+  renderAll();
+}
+
+function cycleTradeStatus(id) {
+  const t = state.trades.find(x => x.id === id);
+  if (!t) return;
+  const order = ['進行中', '已止盈', '已止損'];
+  const next = order[(order.indexOf(t.status) + 1) % order.length];
+  t.status = next;
+  t.manualLock = next !== '進行中';
+  if (next === '進行中') { t.pnl = 0; t.settledReason = null; }
+  if (next === '已止盈') { t.pnl = parseFloat((t.riskU * t.dynR).toFixed(2)); t.settledReason = '手動覆寫止盈'; }
+  if (next === '已止損') { t.pnl = parseFloat((-t.riskU).toFixed(2)); t.settledReason = '手動覆寫止損'; }
+  saveSettings();
+  renderAll();
+}
+
+function clearBacktestRecords() {
+  state.trades = [];
+  saveSettings();
+  document.getElementById('btStatusBadge').textContent = '已清除回測與交易紀錄 (0 筆)';
+  renderAll();
+}
+
+function renderStrategyBreakdown(settled) {
+  const groups = [
+    { key: 'Vegas 通道', fn: t => t.strategy === 'Vegas 通道' },
+    { key: 'Fib 共振', fn: t => t.strategy === 'Fib 共振' },
+    { key: '多策略融合', fn: t => t.strategy === '多策略融合' },
+    { key: '突破動能', fn: t => t.strategy === '突破動能' },
+    { key: '量價背離', fn: t => t.strategy === '量價背離' },
+    { key: '均線趨勢', fn: t => t.strategy === '均線趨勢' },
+    { key: '✓ 確定推薦', fn: t => t.confirmed },
+    { key: '🏛️ 股票代幣', fn: t => t.type === 'STOCK' }
+  ];
+
+  document.getElementById('strategyBreakdownBody').innerHTML = groups.map(g => {
+    const sub = settled.filter(g.fn);
+    const w = sub.filter(x => x.status === '已止盈').length;
+    const pnl = sub.reduce((s, x) => s + x.pnl, 0);
+    const wr = sub.length ? ((w / sub.length) * 100).toFixed(1) + '%' : '-';
+    return `
+      <tr>
+        <td><strong>${g.key}</strong></td>
+        <td>${sub.length}</td>
+        <td>${wr}</td>
+        <td class="${pnl > 0 ? 'pos' : (pnl < 0 ? 'neg' : '')}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} U</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderKPIAndTrades() {
+  const settled = state.trades.filter(t => t.status === '已止盈' || t.status === '已止損');
+  const wins = settled.filter(t => t.status === '已止盈');
+  const losses = settled.filter(t => t.status === '已止損');
+  const openCount = state.trades.length - settled.length;
+
+  const navBtEl = document.getElementById('navBtCount');
+  const navSettledEl = document.getElementById('navSettledCount');
+  const navOpenEl = document.getElementById('navOpenCount');
+  if (navBtEl) navBtEl.textContent = `${state.trades.length} 筆`;
+  if (navSettledEl) navSettledEl.textContent = `${settled.length} 結算`;
+  if (navOpenEl) navOpenEl.textContent = `${openCount} 持倉`;
+
+  const winRate = settled.length ? ((wins.length / settled.length) * 100).toFixed(1) : '0.0';
+  const netPnl = settled.reduce((s, t) => s + t.pnl, 0);
+  const grossWin = wins.reduce((s, t) => s + t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+  const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : (grossWin > 0 ? '∞' : '0.00');
+  const avgR = settled.length ? (settled.reduce((s, t) => s + (t.status === '已止盈' ? t.dynR : -1), 0) / settled.length).toFixed(2) : '0.00';
+
+  let peak = 0, curEq = 0, maxDD = 0, maxW = 0, maxL = 0, curW = 0, curL = 0;
+  const eqPoints = [0];
+  [...settled].reverse().forEach(t => {
+    curEq += t.pnl;
+    eqPoints.push(curEq);
+    if (curEq > peak) peak = curEq;
+    const dd = curEq - peak;
+    if (dd < maxDD) maxDD = dd;
+    if (t.status === '已止盈') { curW++; curL = 0; if (curW > maxW) maxW = curW; }
+    else { curL++; curW = 0; if (curL > maxL) maxL = curL; }
+  });
+
+  const expVal = settled.length ? (netPnl / settled.length).toFixed(2) : '0.00';
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi"><div class="k-label">1. 已結算勝率</div><div class="k-val pos">${winRate}%</div><div class="k-sub">${wins.length} 勝 / ${losses.length} 敗 (共 ${settled.length} 筆)</div></div>
+    <div class="kpi"><div class="k-label">2. 總單據筆數</div><div class="k-val">${state.trades.length} 筆</div><div class="k-sub">持倉中 ${openCount} 筆</div></div>
+    <div class="kpi"><div class="k-label">3. 盈虧淨值</div><div class="k-val ${netPnl >= 0 ? 'pos' : 'neg'}">${netPnl >= 0 ? '+' : ''}${netPnl.toFixed(2)} U</div><div class="k-sub">已結算累計淨值</div></div>
+    <div class="kpi"><div class="k-label">4. 平均盈虧比 / PF</div><div class="k-val">${avgR}R</div><div class="k-sub">獲利因子 ${pf}</div></div>
+    <div class="kpi"><div class="k-label">5. 最大回撤</div><div class="k-val neg">${maxDD.toFixed(2)} U</div><div class="k-sub">峰值回落幅度</div></div>
+    <div class="kpi"><div class="k-label">6. 單筆期望值</div><div class="k-val ${parseFloat(expVal) >= 0 ? 'pos' : 'neg'}">${parseFloat(expVal) >= 0 ? '+' : ''}${expVal} U</div><div class="k-sub">每筆平均淨值</div></div>
+    <div class="kpi"><div class="k-label">7. 最大連勝 / 連敗</div><div class="k-val">${maxW}W / ${maxL}L</div><div class="k-sub">目前連續 ${curW > 0 ? curW + 'W' : curL + 'L'}</div></div>
+  `;
+
+  drawEquityChart(eqPoints);
+  renderStrategyBreakdown(settled);
+
+  const tbody = document.getElementById('tradeHistoryBody');
+  tbody.innerHTML = state.trades.length ? state.trades.map(t => {
+    const stCls = t.status === '已止盈' ? 'tag-long' : (t.status === '已止損' ? 'tag-short' : 'tag-rec');
+    const stLabel = t.status === '進行中' ? '進行中 OPEN' : t.status;
+    const pnlCell = t.status === '進行中'
+      ? `<span style="color:var(--text-muted);">未結算</span><br/><span style="font-size:11px;" class="${(t.unrealizedPnl || 0) >= 0 ? 'pos' : 'neg'}">浮動 ${(t.unrealizedPnl || 0) >= 0 ? '+' : ''}${(t.unrealizedPnl || 0).toFixed(2)} U</span>`
+      : `<span class="${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : ''}${t.pnl.toFixed(2)} U</span>`;
+
+    return `
+      <tr>
+        <td>${t.time}</td>
+        <td><strong>${t.symbol}</strong></td>
+        <td>${t.strategy}<br/><span style="font-size:11px;color:var(--text-muted);">${t.source}</span></td>
+        <td><span class="tag ${t.side === 'LONG' ? 'tag-long' : 'tag-short'}">${t.side}</span></td>
+        <td>
+          進場 ${formatPrice(t.entry)}<br/>
+          <span style="font-size:11px;color:var(--blue);">現價 ${formatPrice(t.lastPrice || t.entry)}</span>
+        </td>
+        <td class="pos">${formatPrice(t.tpPrice)} (+${t.tpPct}%・+${t.dynR}R)</td>
+        <td class="neg">${formatPrice(t.slPrice)} (-${t.slPct}%・-1.0R)</td>
+        <td>${t.pos.toFixed(1)} U</td>
+        <td>${pnlCell}</td>
+        <td>
+          <button class="tag ${stCls}" onclick="cycleTradeStatus(${t.id})">${stLabel}</button>
+          ${t.settledReason ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${t.settledReason}</div>` : '<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">自動監控價格中</div>'}
+        </td>
+      </tr>
+    `;
+  }).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--text-dim);">尚無結算信號節點；執行「確定推薦下單」或「批次公開 K 線回測」後即可檢視明細。</td></tr>`;
+}
+
+function drawEquityChart(points) {
+  try {
+    const canvas = document.getElementById('equityCanvas');
+    if (!canvas || !canvas.getContext) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h / 2);
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+
+    if (points.length < 2) {
+      ctx.fillStyle = '#64748b';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('尚無結算信號節點；執行「一鍵批次抓回測」或「確定推薦下單」觸及 TP/SL 後自動繪製曲線', 20, h / 2 + 4);
+      return;
+    }
+
+    const minV = Math.min(...points, -1);
+    const maxV = Math.max(...points, 1);
+    const span = maxV - minV || 1;
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    points.forEach((v, i) => {
+      const x = 20 + (i / (points.length - 1)) * (w - 40);
+      const y = h - 20 - ((v - minV) / span) * (h - 40);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  } catch (e) {}
+}
+
+async function syncAllExchanges() {
+  const start = performance.now();
+  document.getElementById('syncSummary').textContent = '背景同步排程中 (2200ms 上限)...';
+  const map = new Map();
+
+  const tasks = [
+    fetchWithTimeout('https://api.binance.com/api/v3/ticker/24hr')
+      .then(data => {
+        let cnt = 0;
+        (Array.isArray(data) ? data : []).forEach(d => {
+          if (d.symbol && d.symbol.endsWith('USDT')) {
+            const vol = parseFloat(d.quoteVolume);
+            if (vol >= MIN_VOL_USDT) {
+              cnt++;
+              map.set(d.symbol, {
+                symbol: d.symbol, price: parseFloat(d.lastPrice),
+                change24h: parseFloat(d.priceChangePercent), vol24h: vol,
+                exchange: 'Binance', live: true
+              });
+            }
+          }
+        });
+        state.exStatus.Binance = { live: true, count: cnt };
+      }).catch(() => { state.exStatus.Binance.live = false; }),
+
+    fetchWithTimeout('https://api.bybit.com/v5/market/tickers?category=linear')
+      .then(json => {
+        let cnt = 0;
+        (json.result?.list || []).forEach(d => {
+          if (d.symbol && d.symbol.endsWith('USDT')) {
+            const vol = parseFloat(d.turnover24h);
+            if (vol >= MIN_VOL_USDT) {
+              cnt++;
+              if (!map.has(d.symbol)) {
+                map.set(d.symbol, {
+                  symbol: d.symbol, price: parseFloat(d.lastPrice),
+                  change24h: parseFloat(d.price24hPcnt) * 100, vol24h: vol,
+                  exchange: 'Bybit', live: true
+                });
+              }
+            }
+          }
+        });
+        state.exStatus.Bybit = { live: true, count: cnt };
+      }).catch(() => { state.exStatus.Bybit.live = false; }),
+
+    fetchWithTimeout('https://www.okx.com/api/v5/market/tickers?instType=SWAP')
+      .then(json => {
+        let cnt = 0;
+        (json.data || []).forEach(d => {
+          if (d.instId && d.instId.endsWith('-USDT-SWAP')) {
+            const sym = d.instId.replace('-USDT-SWAP', 'USDT');
+            const last = parseFloat(d.last);
+            const open = parseFloat(d.open24h) || last;
+            const vol = parseFloat(d.volCcy24h) * last;
+            if (vol >= MIN_VOL_USDT) {
+              cnt++;
+              if (!map.has(sym)) {
+                map.set(sym, {
+                  symbol: sym, price: last,
+                  change24h: ((last - open) / Math.max(1e-12, open)) * 100, vol24h: vol,
+                  exchange: 'OKX', live: true
+                });
+              }
+            }
+          }
+        });
+        state.exStatus.OKX = { live: true, count: cnt };
+      }).catch(() => { state.exStatus.OKX.live = false; }),
+
+    fetchWithTimeout('https://api.bitget.com/api/v2/mix/market/tickers?productType=USDT-FUTURES')
+      .then(json => {
+        let cnt = 0;
+        (json.data || []).forEach(d => {
+          if (d.symbol && d.symbol.endsWith('USDT')) {
+            const vol = parseFloat(d.quoteVolume);
+            if (vol >= MIN_VOL_USDT) {
+              cnt++;
+              if (!map.has(d.symbol)) {
+                map.set(d.symbol, {
+                  symbol: d.symbol, price: parseFloat(d.lastPr),
+                  change24h: parseFloat(d.change24h) * 100, vol24h: vol,
+                  exchange: 'Bitget', live: true
+                });
+              }
+            }
+          }
+        });
+        state.exStatus.Bitget = { live: true, count: cnt };
+      }).catch(() => { state.exStatus.Bitget.live = false; })
+  ];
+
+  await Promise.allSettled(tasks);
+
+  const existingMap = new Map(state.assets.map(a => [a.symbol, a]));
+  map.forEach((liveItem, sym) => {
+    if (existingMap.has(sym)) {
+      Object.assign(existingMap.get(sym), liveItem);
+    } else if (existingMap.size < 85) {
+      const strat = STRATEGIES[existingMap.size % STRATEGIES.length];
+      existingMap.set(sym, {
+        ...liveItem,
+        name: sym.replace('USDT', ''),
+        type: 'CRYPTO',
+        strategy: strat,
+        confirmed: Math.abs(liveItem.change24h) >= 3.2 && liveItem.vol24h >= 15000000
+      });
+    }
+  });
+
+  state.assets = Array.from(existingMap.values());
+
+  const topForStructure = [...state.assets]
+    .sort((a, b) => b.vol24h - a.vol24h)
+    .slice(0, 24);
+  await Promise.allSettled(topForStructure.map(async a => {
+    try {
+      const kRes = await fetchSymbolKlines(a.symbol, '15m', 30);
+      if (kRes && Array.isArray(kRes.bars) && kRes.bars.length >= 8) {
+        a._recentBars = kRes.bars.slice(-20);
+        const fCheck = evaluateFibEntryConfirmation(a, a._recentBars);
+        a._fibEval = fCheck;
+        a.confirmed = isConfirmedRecommendation(a, fCheck);
+      } else {
+        a.confirmed = false;
+      }
+    } catch (e) {
+      a.confirmed = false;
+    }
+  }));
+
+  await autoEvaluateOpenTrades(false);
+
+  const elapsed = Math.round(performance.now() - start);
+  const liveExCount = Object.values(state.exStatus).filter(x => x.live).length;
+  document.getElementById('syncSummary').textContent = `同步完成 (${elapsed}ms)・即時連線 ${liveExCount}/4 所・已自動檢核持倉`;
+  renderAll();
+}
+
+const klineCache = new Map();
+const KLINE_CACHE_TTL_MS = 120000;
+let activeBatchRunId = 0;
+
+async function fetchFromSingleExchangeKline(ex, symbol, interval, limit, timeoutMs = 1350) {
+  if (ex === 'Binance') {
+    const rows = await fetchWithTimeout(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`, timeoutMs);
+    if (Array.isArray(rows) && rows.length > 20) {
+      return { source: 'Binance 公開K線', bars: rows.map(r => ({ o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] })) };
+    }
+  } else if (ex === 'Bybit') {
+    const byInt = interval === '15m' ? '15' : (interval === '1h' ? '60' : '240');
+    const json = await fetchWithTimeout(`https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${byInt}&limit=${limit}`, timeoutMs);
+    const list = json.result?.list || [];
+    if (list.length > 20) {
+      return { source: 'Bybit 公開K線', bars: list.reverse().map(r => ({ o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] })) };
+    }
+  } else if (ex === 'OKX') {
+    const instId = symbol.endsWith('USDT') ? symbol.slice(0, -4) + '-USDT-SWAP' : symbol;
+    const bar = interval === '15m' ? '15m' : (interval === '1h' ? '1H' : '4H');
+    const json = await fetchWithTimeout(`https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=${bar}&limit=${limit}`, timeoutMs);
+    const rows = json.data || [];
+    if (rows.length > 20) {
+      return { source: 'OKX 公開K線', bars: [...rows].reverse().map(r => ({ o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] })) };
+    }
+  } else if (ex === 'Bitget') {
+    const gran = interval === '15m' ? '15m' : (interval === '1h' ? '1H' : '4H');
+    const json = await fetchWithTimeout(`https://api.bitget.com/api/v2/mix/market/candles?productType=USDT-FUTURES&symbol=${symbol}&granularity=${gran}&limit=${limit}`, timeoutMs);
+    const rows = json.data || [];
+    if (rows.length > 20) {
+      return { source: 'Bitget 公開K線', bars: rows.map(r => ({ o: +r[1], h: +r[2], l: +r[3], c: +r[4], v: +r[5] })) };
+    }
+  }
+  throw new Error('empty kline');
+}
+
+async function fetchSymbolKlines(symbol, interval, limit, preferredEx = 'AUTO') {
+  const key = `${preferredEx}:${symbol}:${interval}:${limit}`;
+  const cached = klineCache.get(key);
+  if (cached && (Date.now() - cached.ts) < KLINE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const order = preferredEx && preferredEx !== 'AUTO'
+    ? [preferredEx, ...['Binance', 'Bybit', 'OKX', 'Bitget'].filter(x => x !== preferredEx)]
+    : ['Binance', 'Bybit', 'OKX', 'Bitget'];
+
+  const firstWave = await Promise.allSettled(
+    order.slice(0, 2).map(ex => fetchFromSingleExchangeKline(ex, symbol, interval, limit, 1300))
+  );
+  for (const r of firstWave) {
+    if (r.status === 'fulfilled' && r.value) {
+      klineCache.set(key, { ts: Date.now(), data: r.value });
+      return r.value;
+    }
+  }
+
+  const secondWave = await Promise.allSettled(
+    order.slice(2).map(ex => fetchFromSingleExchangeKline(ex, symbol, interval, limit, 1300))
+  );
+  for (const r of secondWave) {
+    if (r.status === 'fulfilled' && r.value) {
+      klineCache.set(key, { ts: Date.now(), data: r.value });
+      return r.value;
+    }
+  }
+
+  return null;
+}
+
+function calcEMAArray(closes, period) {
+  const k = 2 / (period + 1);
+  const out = [];
+  let prev = closes[0];
+  for (let i = 0; i < closes.length; i++) {
+    prev = i === 0 ? closes[0] : closes[i] * k + prev * (1 - k);
+    out.push(prev);
+  }
+  return out;
+}
+
+function simulateBacktestOnBars(asset, bars, stratOverride, rMode, interval, sourceName) {
+  const usedStrat = stratOverride === 'AUTO' ? asset.strategy : stratOverride;
+  const closes = bars.map(b => b.c);
+  const emaFast = calcEMAArray(closes, 12);
+  const emaSlow = calcEMAArray(closes, 34);
+
+  let entryIdx = Math.max(35, bars.length - 45);
+  let signalSide = null;
+  for (let i = bars.length - 12; i >= 35; i--) {
+    const crossUp = emaFast[i - 1] <= emaSlow[i - 1] && emaFast[i] > emaSlow[i];
+    const crossDn = emaFast[i - 1] >= emaSlow[i - 1] && emaFast[i] < emaSlow[i];
+    if (crossUp) { entryIdx = i; signalSide = 'LONG'; break; }
+    if (crossDn) { entryIdx = i; signalSide = 'SHORT'; break; }
+  }
+
+  const localChange = ((closes[entryIdx] - closes[Math.max(0, entryIdx - 24)]) / Math.max(1e-12, closes[Math.max(0, entryIdx - 24)])) * 100;
+  const lookbackStart = Math.max(0, entryIdx - 15);
+  const structureBars = bars.slice(lookbackStart, entryIdx + 1);
+  const entry = bars[entryIdx].c;
+  const lastBarClose = bars[bars.length - 1].c;
+
+  const tempAsset = { ...asset, price: entry, change24h: localChange, strategy: usedStrat };
+  const baseAnalysis = analyzeAsset(tempAsset, structureBars);
+
+  let side = signalSide || baseAnalysis.side;
+  if (usedStrat === '量價背離') {
+    const win = bars.slice(Math.max(0, entryIdx - 5), entryIdx + 1);
+    const vols = win.map(b => +b.v || 0).filter(v => v > 0);
+    const avgV = vols.length >= 2 ? vols.slice(0, -1).reduce((s, x) => s + x, 0) / (vols.length - 1) : 0;
+    const curV = +bars[entryIdx].v || 0;
+    const curB = bars[entryIdx];
+    const prevSlice = win.slice(0, -1);
+    const isBearDiv = prevSlice.length > 0 && curB.h >= Math.max(...prevSlice.map(b => b.h)) && curB.c < curB.o && avgV > 0 && curV < avgV * 0.85;
+    const isBullDiv = prevSlice.length > 0 && curB.l <= Math.min(...prevSlice.map(b => b.l)) && curB.c > curB.o && avgV > 0 && curV < avgV * 0.85;
+
+    if (isBearDiv) side = 'SHORT';
+    else if (isBullDiv) side = 'LONG';
+    else side = signalSide || baseAnalysis.side;
+  }
+
+  let dynR = Math.min(2.1, baseAnalysis.dynR);
+  if (rMode === 'FIXED_2') dynR = 2.0;
+  if (rMode === 'FIXED_2_5') dynR = 2.2;
+
+  const stopInfo = computeStructureStop(entry, side, structureBars, baseAnalysis.slPct, asset.type);
+  const slPct = stopInfo.slPct;
+  const slPrice = stopInfo.slPrice;
+  const tpPct = parseFloat((slPct * dynR).toFixed(2));
+  const tpPrice = side === 'LONG' ? entry * (1 + tpPct / 100) : entry * (1 - tpPct / 100);
+  const riskAmount = Math.max(10, parseFloat(document.getElementById('capitalInput').value) || 1000) *
+    (Math.max(0.1, parseFloat(document.getElementById('riskInput').value) || 2.0) / 100);
+  const suggestedPos = parseFloat((riskAmount / (Math.max(0.05, slPct) / 100)).toFixed(1));
+
+  let status = '進行中';
+  let settledReason = null;
+  for (let i = entryIdx + 1; i < bars.length; i++) {
+    const b = bars[i];
+    if (side === 'LONG') {
+      if (b.l <= slPrice) { status = '已止損'; settledReason = 'K線歷史觸損'; break; }
+      if (b.h >= tpPrice) { status = '已止盈'; settledReason = 'K線歷史觸盈'; break; }
+    } else {
+      if (b.h >= slPrice) { status = '已止損'; settledReason = 'K線歷史觸損'; break; }
+      if (b.l <= tpPrice) { status = '已止盈'; settledReason = 'K線歷史觸盈'; break; }
+    }
+  }
+
+  const riskU = suggestedPos * (slPct / 100);
+  const pnl = status === '已止盈' ? parseFloat((riskU * dynR).toFixed(2)) : (status === '已止損' ? parseFloat((-riskU).toFixed(2)) : 0);
+
+  return {
+    id: Date.now() + Math.random(),
+    time: new Date().toLocaleTimeString('zh-TW', { hour12: false }),
+    symbol: asset.symbol,
+    type: asset.type,
+    confirmed: asset.confirmed,
+    strategy: usedStrat,
+    source: `${interval}・${sourceName}`,
+    side,
+    entry,
+    lastPrice: lastBarClose,
+    tpPrice,
+    slPrice,
+    tpPct,
+    slPct,
+    dynR,
+    pos: suggestedPos,
+    riskU: parseFloat(riskU.toFixed(2)),
+    unrealizedPnl: 0,
+    pnl,
+    status,
+    settledReason: settledReason ? `${settledReason}・${baseAnalysis.fibLevelLabel}` : baseAnalysis.fibLevelLabel,
+    manualLock: false
+  };
+}
+
+function fetchSymbolKlinesWithHardGuard(symbol, interval, limit, preferredEx, guardMs = 2600) {
+  return Promise.race([
+    fetchSymbolKlines(symbol, interval, limit, preferredEx),
+    new Promise(resolve => setTimeout(() => resolve(null), guardMs))
+  ]);
+}
+
+async function runBatchBacktest(mode) {
+  const runId = ++activeBatchRunId;
+  const limit = parseInt(document.getElementById('btLimitSelect').value, 10) || 30;
+  const preferredEx = document.getElementById('btExchangeSelect').value || 'AUTO';
+  const interval = document.getElementById('btIntervalSelect').value;
+  const barsCount = parseInt(document.getElementById('btBarsSelect').value, 10) || 200;
+  const stratOverride = document.getElementById('btStrategySelect').value;
+  const rMode = document.getElementById('btRModeSelect').value;
+
+  let targets = [];
+  const pool = getFilteredAssets();
+  if (mode === 'POOL') targets = pool.slice(0, limit);
+  else if (mode === 'REC') targets = pool.filter(x => x.confirmed).slice(0, limit);
+  else if (mode === 'STOCK') targets = pool.filter(x => x.type === 'STOCK').slice(0, limit);
+  else {
+    const syms = document.getElementById('btCustomSymbols').value.split(/[\s,，]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+    targets = syms.slice(0, limit).map(sym => state.assets.find(a => a.symbol === sym) || {
+      symbol: sym, name: sym, type: 'CRYPTO', price: 1, change24h: 2.0, vol24h: 10000000, exchange: preferredEx, strategy: '多策略融合', confirmed: false
+    });
+  }
+
+  const logEl = document.getElementById('btLogText');
+  const badgeEl = document.getElementById('btStatusBadge');
+  if (!targets.length) {
+    badgeEl.textContent = '目前沒有符合條件的回測標的 (0 檔)';
+    return;
+  }
+
+  const tStart = performance.now();
+  badgeEl.textContent = `極速抓取 ${targets.length} 檔公開 K 線 (${preferredEx}・${interval})...`;
+
+  let okCount = 0;
+  let doneCount = 0;
+  const missing = [];
+  const batchSize = 8;
+
+  for (let i = 0; i < targets.length; i += batchSize) {
+    if (runId !== activeBatchRunId) return;
+    const chunk = targets.slice(i, i + batchSize);
+    await Promise.allSettled(chunk.map(async asset => {
+      try {
+        const res = await fetchSymbolKlinesWithHardGuard(asset.symbol, interval, barsCount, preferredEx, 2500);
+        if (runId !== activeBatchRunId) return;
+        if (res && Array.isArray(res.bars) && res.bars.length > 20) {
+          okCount++;
+          const rec = simulateBacktestOnBars(asset, res.bars, stratOverride, rMode, interval, res.source);
+          state.trades.unshift(rec);
+        } else {
+          missing.push(asset.symbol);
+        }
+      } catch (e) {
+        missing.push(asset.symbol);
+      } finally {
+        doneCount++;
+      }
+    }));
+
+    if (runId !== activeBatchRunId) return;
+    badgeEl.textContent = `批次進度 ${Math.min(doneCount, targets.length)} / ${targets.length} 檔...`;
+    renderKPIAndTrades();
+  }
+
+  if (runId !== activeBatchRunId) return;
+  saveSettings();
+  renderAll();
+  const sec = ((performance.now() - tStart) / 1000).toFixed(1);
+  badgeEl.textContent = `已完成批次回測 (${sec}s)：成功 ${okCount} 檔 / 未取得 ${missing.length} 檔`;
+  logEl.textContent = missing.length
+    ? `回測完成（${sec}s・${interval}・${barsCount}根）：成功取得 ${okCount} 檔真實公開 K 線；未取得真實K線（不編造假資料）：${missing.join(', ')}`
+    : `回測完成（${sec}s・${interval}・${barsCount}根）：全部 ${okCount} 檔皆取得真實公開 K 線並完成結算。`;
+}
+
+function exportJSON() {
+  try {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), trades: state.trades }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vegas-fib-v35-backup.json';
+    a.click();
+  } catch (e) {}
+}
+
+function exportCSV() {
+  try {
+    const header = '時間,標的,策略,來源,方向,進場,最新價,單一TP,獨立止損,動態R,建議倉位,盈虧淨值,狀態\n';
+    const rows = state.trades.map(t => `${t.time},${t.symbol},${t.strategy},${t.source},${t.side},${t.entry},${t.lastPrice || t.entry},${t.tpPrice},${t.slPrice},${t.dynR},${t.pos},${t.pnl},${t.status}`).join('\n');
+    const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vegas-fib-v35-records.csv';
+    a.click();
+  } catch (e) {}
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (Array.isArray(data.trades)) {
+        state.trades = data.trades;
+        saveSettings();
+        autoEvaluateOpenTrades(false);
+        renderAll();
+      }
+    } catch (err) {}
+  };
+  reader.readAsText(file);
+}
+
+function resetDefaults() {
+  document.getElementById('capitalInput').value = 1000;
+  document.getElementById('riskInput').value = 2.0;
+  document.getElementById('corrInput').value = 0.45;
+  document.getElementById('corrVal').textContent = '0.45';
+  state.strategyFilter = 'ALL';
+  state.onlyRec = false;
+  state.showDup = false;
+  saveSettings();
+  renderAll();
+}
+
+window.addEventListener('error', (ev) => {
+  const el = document.getElementById('syncSummary');
+  if (el) el.textContent = '頁面提示：' + (ev.message || '腳本已安全保護');
+});
+window.addEventListener('unhandledrejection', () => {
+  const el = document.getElementById('syncSummary');
+  if (el) el.textContent = '網路逾時或已切換備援行情';
+});
+
+function openIndexDrawer() {
+  document.getElementById('indexDrawer').classList.add('open');
+  document.getElementById('drawerBackdrop').classList.add('open');
+}
+
+function closeIndexDrawer() {
+  document.getElementById('indexDrawer').classList.remove('open');
+  document.getElementById('drawerBackdrop').classList.remove('open');
+}
+
+function setActiveNavSection(targetId) {
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    const isMatch = btn.dataset.target === targetId;
+    btn.classList.toggle('active', isMatch);
+    if (isMatch && btn.scrollIntoView) {
+      btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+  document.querySelectorAll('.drawer-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.target === targetId);
+  });
+}
+
+function jumpToSection(targetId) {
+  closeIndexDrawer();
+  setActiveNavSection(targetId);
+  const el = document.getElementById(targetId);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function updateNavBadges(recCount, stockCount, poolCount) {
+  const liveEx = Object.values(state.exStatus).filter(x => x.live).length;
+  const riskVal = parseFloat(document.getElementById('riskInput')?.value) || 2.0;
+  const exEl = document.getElementById('navExBadge');
+  const riskEl = document.getElementById('navRiskBadge');
+  const recEl = document.getElementById('navRecCount');
+  const stockEl = document.getElementById('navStockCount');
+  const poolEl = document.getElementById('navPoolCount');
+  if (exEl) exEl.textContent = `${liveEx}/4 所`;
+  if (riskEl) riskEl.textContent = `${riskVal.toFixed(1)}%`;
+  if (recEl) recEl.textContent = `${recCount} 檔`;
+  if (stockEl) stockEl.textContent = `${stockCount} 檔`;
+  if (poolEl) poolEl.textContent = `${poolCount} 檔`;
+}
+
+function initSectionScrollSpy() {
+  const sectionIds = ['sec-overview', 'sec-risk', 'sec-rec', 'sec-stock', 'sec-pool', 'sec-backtest', 'sec-breakdown', 'sec-trades'];
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const offset = 96;
+      let currentId = sectionIds[0];
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= offset) {
+          currentId = id;
+        }
+      }
+      setActiveNavSection(currentId);
+      ticking = false;
+    });
+  }, { passive: true });
+}
+
+loadSavedState();
+renderAll();
+initSectionScrollSpy();
+setTimeout(() => { syncAllExchanges().catch(() => {}); }, 80);
+setInterval(() => {
+  if (state.trades.some(t => t.status === '進行中')) {
+    autoEvaluateOpenTrades(true).catch(() => {});
+  }
+}, 15000);
+</script>
+</body>
+</html>
